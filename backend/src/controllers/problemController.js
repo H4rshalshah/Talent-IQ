@@ -2,6 +2,7 @@ import Problem from "../models/Problem.js";
 import ProblemSubmission from "../models/ProblemSubmission.js";
 import { executePiston, normalizeLine } from "../services/problems/executor.service.js";
 import { generateHarness, splitAtHarness } from "../services/problems/codegen.service.js";
+import { syncCodeforcesProblems } from "../services/codeforces/sync.service.js";
 
 const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
 const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
@@ -65,6 +66,22 @@ export async function listProblems(req, res) {
       Problem.countDocuments(filter),
     ]);
 
+    // Lazy self-healing: if the Codeforces bank is empty (fresh deploy or a
+    // wiped DB), kick off a background sync so ANY user who opens the bank
+    // sees problems — no admin button or 5-minute boot wait required. The
+    // sync's own in-flight lock prevents duplicate concurrent runs; failures
+    // are logged and never break the list request.
+    let syncing = false;
+    if (source !== "custom") {
+      const cfCount = await Problem.countDocuments({ source: "codeforces" });
+      if (cfCount === 0) {
+        syncing = true;
+        syncCodeforcesProblems()
+          .then((stats) => console.log("✅ Lazy Codeforces sync:", JSON.stringify(stats)))
+          .catch((error) => console.warn("⚠️ Lazy Codeforces sync skipped:", error.message));
+      }
+    }
+
     const statusMap = await latestUserStatus(
       req.user._id,
       problems.map((p) => p.slug)
@@ -97,6 +114,7 @@ export async function listProblems(req, res) {
         total,
         totalPages: Math.ceil(total / limitNum),
       },
+      syncing,
     });
   } catch (error) {
     console.error("Error in listProblems:", error.message);

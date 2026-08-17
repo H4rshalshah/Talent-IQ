@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   BookmarkIcon,
@@ -167,6 +167,14 @@ function PracticePage() {
     fn(v);
   };
 
+  // when the bank is auto-syncing on first load (empty DB), poll until the
+  // problems arrive — the user should just see the bank appear, not an error
+  useEffect(() => {
+    if (!data?.data?.syncing) return;
+    const timer = setInterval(() => refetch(), 5000);
+    return () => clearInterval(timer);
+  }, [data?.data?.syncing, refetch]);
+
   return (
     <div className="min-h-screen bg-base-200">
       <Navbar />
@@ -311,16 +319,30 @@ function PracticePage() {
         ) : problems.length === 0 ? (
           <div className="card bg-base-100 border border-base-300 py-16 text-center">
             <StarIcon className="size-10 mx-auto text-base-content/30 mb-3" />
-            <p className="text-base-content/60 mb-4">No problems match your filters.</p>
-            {pagination.total === 0 && source !== "custom" && (
-              <button
-                onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-                className="btn btn-primary btn-sm mx-auto gap-2"
-              >
-                <ServerIcon className="size-4" />
-                {syncMutation.isPending ? "Syncing…" : "Sync from Codeforces"}
-              </button>
+            {data?.data?.syncing ? (
+              <>
+                <div className="flex items-center justify-center gap-2 text-primary mb-4">
+                  <LoaderIcon className="size-5 animate-spin" />
+                  <p className="font-semibold">Syncing problem bank from Codeforces…</p>
+                </div>
+                <p className="text-sm text-base-content/50">
+                  First-time setup — this takes a few seconds. The bank will appear automatically.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-base-content/60 mb-4">No problems match your filters.</p>
+                {pagination.total === 0 && source !== "custom" && (
+                  <button
+                    onClick={() => syncMutation.mutate()}
+                    disabled={syncMutation.isPending}
+                    className="btn btn-primary btn-sm mx-auto gap-2"
+                  >
+                    <ServerIcon className="size-4" />
+                    {syncMutation.isPending ? "Syncing…" : "Sync from Codeforces"}
+                  </button>
+                )}
+              </>
             )}
           </div>
         ) : (

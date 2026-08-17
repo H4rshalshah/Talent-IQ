@@ -7,6 +7,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
 import { inngest, functions } from "./lib/inngest.js";
+import Problem from "./models/Problem.js";
 import { seedProblemBank } from "./services/problems/seed.service.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
@@ -64,6 +65,20 @@ const startServer = async () => {
     // seed/refresh the curated problem bank (idempotent)
     await seedProblemBank();
     app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
+
+    // If the Codeforces bank is empty at boot, populate it right away (async,
+    // non-blocking) so first-time users never land on an empty bank. The lazy
+    // sync in the list API covers every other case.
+    try {
+      const cfCount = await Problem.countDocuments({ source: "codeforces" });
+      if (cfCount === 0) {
+        syncCodeforcesProblems()
+          .then((stats) => console.log("✅ Boot Codeforces sync:", JSON.stringify(stats)))
+          .catch((error) => console.warn("⚠️ Boot Codeforces sync skipped:", error.message));
+      }
+    } catch (error) {
+      console.warn("⚠️ Could not check problem bank at boot:", error.message);
+    }
 
     // periodic Codeforces refresh — safe interval job; a failed fetch is logged
     // and skipped (Codeforces downtime never crashes the app). Only runs when
