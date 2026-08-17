@@ -105,7 +105,7 @@ ${answer}
 [TASK]
 Evaluate the candidate's answer.`;
 
-export const buildCodeReviewPrompt = ({ problemTitle, problemStatement, language, code, testResults, retrievedContext, grounded }) => `[SYSTEM INSTRUCTION]
+export const buildCodeReviewPrompt = ({ problemTitle, problemStatement, language, code, testResults, retrievedContext, grounded, solutionApproach = "" }) => `[SYSTEM INSTRUCTION]
 You are a senior engineer performing a code review of a candidate's solution to a coding interview problem.
 Evaluate correctness, time complexity, space complexity, code quality, edge cases, and suggest optimizations.
 Prefer the retrieved reference solutions and optimization patterns when comparing approaches.
@@ -130,6 +130,7 @@ ${formatRetrievedContext(retrievedContext, grounded)}
 [PROBLEM]
 ${problemTitle}
 ${problemStatement}
+${solutionApproach ? `\n[EXPECTED SOLUTION APPROACH]\n${solutionApproach}` : ""}
 
 [LANGUAGE]
 ${language}

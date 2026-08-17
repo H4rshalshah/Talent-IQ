@@ -5,7 +5,7 @@ import HomePage from "./pages/HomePage";
 import { Toaster } from "react-hot-toast";
 import DashboardPage from "./pages/DashboardPage";
 import ProblemPage from "./pages/ProblemPage";
-import ProblemsPage from "./pages/ProblemsPage";
+import PracticePage from "./pages/PracticePage";
 import SessionPage from "./pages/SessionPage";
 import InterviewsPage from "./pages/InterviewsPage";
 import AIInterviewSetupPage from "./pages/AIInterviewSetupPage";
@@ -36,8 +36,10 @@ function App() {
         <Route path="/interviews/human" element={<Protected><HumanInterviewLobbyPage /></Protected>} />
         <Route path="/interviews/result/:id" element={<Protected><InterviewResultPage /></Protected>} />
 
-        {/* Practice */}
-        <Route path="/problems" element={<Protected><ProblemsPage /></Protected>} />
+        {/* Practice — one page hosting the Codeforces library + in-house problems */}
+        <Route path="/practice" element={<Protected><PracticePage /></Protected>} />
+        <Route path="/problems" element={<Navigate to="/practice" replace />} />
+        <Route path="/question-bank" element={<Navigate to="/practice" replace />} />
         <Route path="/problem/:id" element={<Protected><ProblemPage /></Protected>} />
         <Route path="/session/:id" element={<Protected><SessionPage /></Protected>} />
 

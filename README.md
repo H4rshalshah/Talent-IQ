@@ -12,7 +12,7 @@ Talent-IQ is a full-stack interview platform with two interview modes: live **hu
 - 💻 **AI Code Review** — correctness, time/space complexity, code quality, edge cases, and optimizations compared against a bank of reference solutions
 - 📊 **Performance Analytics** — overall score, skill breakdown, interview history, and score trends
 - 🧭 **AI Career Coach** — personalized improvement roadmap built from actual interview performance and retrieved learning material
-- 🧩 **Coding Practice** — VSCode-powered Monaco editor, multi-language (JavaScript / Python / Java), test-case evaluation via Piston
+- 🧩 **Coding Practice** — LeetCode-style problem bank (13 curated problems, difficulty + tag filters, search, per-user solved/attempted status), VSCode-powered Monaco editor, 10 fully-working languages, hidden test-case judging via Wandbox
 - 🎥 **Stream video infrastructure** — 1-on-1 rooms, room locking, live presence
 - 🔐 **Authentication** — Clerk
 - 🎨 **Smooth-scroll UI with GSAP** — purposeful entrance/scroll animations (Lenis + ScrollTrigger), `prefers-reduced-motion` respected
@@ -67,8 +67,10 @@ If retrieval returns nothing relevant, the system falls back to the model's gene
 **Backend**
 - Node.js + Express 5, Mongoose (MongoDB)
 - Clerk (JWT auth middleware), Stream Node SDK, Inngest (background jobs)
-- OpenAI-compatible LLM client (`openai` package — works with OpenAI or any OpenAI-compatible endpoint)
-- RAG: embedding service + provider-agnostic vector store (MongoDB Atlas `$vectorSearch` with in-process cosine-similarity fallback)
+- LLM layer over plain `fetch`, routed **per task** via `aiClient.js`: **Groq** is the primary for all tasks (question generation, follow-ups, evaluation, code review, reports, roadmaps), with **Gemini** as the automatic failover when Groq is rate-limited. The routing is configurable per task through `AI_PROVIDER_*` env vars.
+- Problem bank: Mongoose `Problem` + `ProblemSubmission` models, seeded on boot with 13 LeetCode-style problems; per-language starter code + judge harnesses generated from a neutral spec (`services/problems/codegen.service.js`)
+- Code execution: **Wandbox API** (keyless) — the previous Piston provider became whitelist-only in Feb 2026, so it was replaced
+- RAG: embedding service (Gemini or local hashing) + provider-agnostic vector store (MongoDB Atlas `$vectorSearch` with in-process cosine-similarity fallback)
 
 ## Environment Variables
 
@@ -91,15 +93,17 @@ CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
 
 # AI / LLM (required for AI interviews, code review, reports, roadmap)
-OPENAI_API_KEY=your_openai_api_key
+# Groq first; Gemini fallback when Groq's rate limit is hit.
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
 
-# Optional: any OpenAI-compatible endpoint (Ollama, LM Studio, Together, ...)
-# OPENAI_BASE_URL=https://api.openai.com/v1
-# LLM_MODEL=gpt-4o-mini
+# Optional model overrides:
+# GROQ_MODEL=groq/compound-mini
+# GEMINI_MODEL=gemini-3.6-flash
 
-# Embeddings: auto-detected (openai if OPENAI_API_KEY set, else local hashing)
+# Embeddings: gemini (free API) or local hashing (no key needed)
 # EMBEDDING_PROVIDER=local
-# EMBEDDING_MODEL=text-embedding-3-small
+# EMBEDDING_MODEL=gemini-embedding-001
 # VECTOR_TOP_K=6
 ```
 
@@ -113,6 +117,13 @@ VITE_STREAM_API_KEY=your_stream_api_key
 
 See `.env.example` in each folder. **Never commit `.env` files.**
 
+## Coding Practice (Problem Bank)
+
+- **Source** — the 13 problems in `backend/src/data/problems.seed.js` are original, written in-house in a LeetCode-style format (title, slug, difficulty, tags, markdown description, constraints, examples, starter code, hidden + visible test cases, solution approach). No scraping — LeetCode content is copyrighted.
+- **Languages** — 10 languages work end-to-end (run + submit + judge): **C, C++, Java, Python, JavaScript, C#, Go, Rust, PHP, Ruby**. TypeScript, Kotlin, and Swift are **not** shown in the language selector: the Wandbox runtimes for them are broken (TS ignores compiler flags and lacks a modern lib; Swift crashes; no Kotlin runtime), so per the project's honesty rule they are hidden rather than left silently non-functional.
+- **Judging** — `POST /api/problems/:id/submit` replaces the user's solution into a generated harness per language, runs it against the problem's hidden test cases on Wandbox, compares canonical expected output, and records per-user status.
+- **Per-user status** — solved / attempted counts come from `ProblemSubmission` records, shown on the practice list and problem page.
+
 ## Local Setup
 
 ### 1. Install dependencies
@@ -124,7 +135,7 @@ npm install --prefix frontend
 
 ### 2. Configure environment
 
-Copy `.env.example` to `.env` in both `backend/` and `frontend/` and fill in the values (Clerk, Stream, MongoDB, OpenAI).
+Copy `.env.example` to `.env` in both `backend/` and `frontend/` and fill in the values (Clerk, Stream, MongoDB, Groq, Gemini).
 
 ### 3. Run the backend
 
@@ -159,7 +170,7 @@ Open `http://localhost:5173`.
 
 ### Vector search index (optional)
 
-On **MongoDB Atlas**, create a vector search index named `vector_index` on the `knowledgedocuments` collection, path `embedding`, with dimensions matching your embedding model (1536 for `text-embedding-3-small`, 384 for the local provider). Without the index, the vector store transparently falls back to in-process cosine similarity over the same collection, so everything still works on a free/local MongoDB.
+On **MongoDB Atlas**, create a vector search index named `vector_index` on the `knowledgedocuments` collection, path `embedding`, with dimensions matching your embedding model (3072 for `gemini-embedding-001` as returned by the API, 384 for the local provider). Without the index, the vector store transparently falls back to in-process cosine similarity over the same collection, so everything still works on a free/local MongoDB.
 
 ## How the AI Features Work
 
@@ -183,7 +194,16 @@ No randomness — the next question always follows from the evaluated performanc
 
 ### AI Code Review
 
-After submitting code (in practice problems or human sessions), the code is sent to `POST /api/code/review`. The retriever pulls known-good solutions and optimization patterns for that problem from the `question-bank` collection, and the review covers correctness, time/space complexity, code quality, missing edge cases, and a concrete optimization suggestion. Test-case results are always shown to the candidate; AI review is an additional layer, not a gate.
+After submitting code (in practice problems or human sessions), the code is sent to `POST /api/code/review`. The retriever pulls known-good solutions and optimization patterns for that problem from the `question-bank` collection (in practice problems, the problem's own `solutionApproach` is injected as grounding), and the review covers correctness, time/space complexity, code quality, missing edge cases, and a concrete optimization suggestion. Reviews run on **Gemini** (deeper analysis). Test-case results are always shown to the candidate; AI review is an additional layer, not a gate.
+
+### Provider routing (Groq vs Gemini)
+
+All LLM calls go through `services/ai/aiClient.js`, which exposes one interface (`generateStructured({ task, prompt, schema, useFallback })`) and routes per task. The mapping lives in one place and is overridable per task via `AI_PROVIDER_<TASK>` env vars:
+
+- **Groq** (default for all tasks) — `question`, `followup`, `evaluate`, `review`, `report`, `roadmap`
+- **Gemini** — automatic failover when Groq is rate-limited; can be set as primary for any task via env
+
+If the primary provider fails or is rate-limited, the client retries once on the other provider; if both fail, a local heuristic (or a safe default) is used and the failure is logged rather than crashing the request. Every response is parsed defensively (markdown fences stripped) and validated against the expected schema before it is returned.
 
 ### Performance Dashboard & Career Coach
 
@@ -201,6 +221,12 @@ GET  /api/interviews/:id              full interview detail (questions, report, 
 POST /api/interviews/:id/abort        abort an interview
 
 POST /api/code/review                 AI code review
+
+GET  /api/problems                    list problems (filters: difficulty, tag, search)
+GET  /api/problems/:slug              problem detail (description, starter code per language, examples)
+POST /api/problems/:slug/run          run code against visible sample tests
+POST /api/problems/:slug/submit       judge against hidden tests, record per-user status
+GET  /api/problems/status             per-user solved/attempted summary
 
 GET  /api/performance                 aggregated performance dashboard
 GET  /api/performance/:interviewId    single interview performance
@@ -224,16 +250,19 @@ Responses use a consistent envelope: `{ "success": true, "data": {} }` or `{ "su
 ```text
 backend/
   src/
-    controllers/     # interview, code review, performance, career coach, RAG
-    data/knowledge/  # checked-in reference material (job-knowledge, question-bank JSON)
+    controllers/     # interview, code review, performance, career coach, RAG, problems
+    data/            # knowledge/ (checked-in reference material) + problems.seed.js
     lib/             # env, db, stream, inngest, rate limits
     middleware/      # Clerk protectRoute
     models/          # Session, User, Interview, InterviewQuestion, CodeSubmission,
-                     # Performance, CareerRoadmap, KnowledgeDocument, RetrievalLog
+                     # Performance, CareerRoadmap, KnowledgeDocument, RetrievalLog,
+                     # Problem, ProblemSubmission
     routes/          # REST API routes
     services/
-      ai/            # llm, embedding, interview (adaptive engine), evaluation,
-                     # codeReview, careerCoach, prompts, topics
+      ai/            # aiClient + providers/ (groq, gemini), embedding, interview
+                     # (adaptive engine), evaluation, codeReview, careerCoach, prompts, topics
+      problems/      # codegen (per-language starter code + judge harnesses), executor
+                     # (Wandbox), seed (boot-time seeding)
       rag/           # vectorStore (provider-agnostic), ingestion, retriever
 frontend/
   src/
@@ -247,7 +276,7 @@ frontend/
 
 ## AI Service Design Notes
 
-- **Modular AI layer** — all LLM calls go through `services/ai/llm.service.js` (OpenAI-compatible). Swap the provider by changing `OPENAI_BASE_URL` and `LLM_MODEL`, or replace the module.
+- **Modular AI layer** — all LLM calls go through `services/ai/aiClient.js` (with per-task provider routing to Groq/Gemini via `services/ai/providers/`). No OpenAI/other SDKs are used.
 - **Swappable vector store** — all vector operations go through `services/rag/vectorStore.service.js`. The rest of the codebase never talks to a provider SDK directly.
 - **Structured output** — prompts request JSON and responses are validated/sanitized before persisting; malformed output is retried, then a safe fallback is used.
 - **Graceful degradation** — LLM failure, retrieval failure, or a missing API key never crashes the app; the UI shows "AI interviewer is temporarily unavailable" and retrieval falls back to ungrounded generation.

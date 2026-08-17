@@ -57,8 +57,8 @@ function InterviewsPage() {
         <div className="reveal">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-accent to-secondary rounded-xl">
-                <MessagesSquareIcon className="w-5 h-5 text-white" />
+              <div className="icon-tint size-10">
+                <MessagesSquareIcon className="size-5" />
               </div>
               <h2 className="text-2xl font-black">Your Interview History</h2>
             </div>
@@ -75,17 +75,11 @@ function InterviewsPage() {
                 <div className="divide-y divide-base-200">
                   {interviews.map((interview) => (
                     <div key={interview._id} className="flex flex-wrap items-center gap-4 p-5">
-                      <div
-                        className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${
-                          interview.type === "ai"
-                            ? "bg-gradient-to-br from-primary to-secondary"
-                            : "bg-gradient-to-br from-secondary to-accent"
-                        }`}
-                      >
+                      <div className="icon-tint size-11 shrink-0">
                         {interview.type === "ai" ? (
-                          <BotIcon className="size-5 text-white" />
+                          <BotIcon className="size-5" />
                         ) : (
-                          <UsersIcon className="size-5 text-white" />
+                          <UsersIcon className="size-5" />
                         )}
                       </div>
 
@@ -140,8 +134,8 @@ function InterviewsPage() {
             </div>
           ) : (
             <div className="text-center py-16 card bg-base-100">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl flex items-center justify-center">
-                <MessagesSquareIcon className="w-10 h-10 text-primary/50" />
+              <div className="icon-tint w-16 h-16 mx-auto mb-4 rounded-full">
+                <MessagesSquareIcon className="size-8" />
               </div>
               <p className="text-lg font-semibold opacity-70 mb-1">No interviews yet</p>
               <p className="text-sm opacity-50 mb-6">

@@ -1,6 +1,129 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: all;
+  themes: false;
+}
+
+/* GeeksforGeeks-style palette: green primary, white/light backgrounds,
+   charcoal text, amber warnings, standard red errors. No violet. */
+@plugin "daisyui/theme" {
+  name: "gfg";
+  default: true;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;
+  --color-base-200: #f5f7f5;
+  --color-base-300: #e7eae7;
+  --color-base-content: #1f2937;
+
+  /* lighter green family — primary buttons, active states, links */
+  --color-primary: #4caf50;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #66bb6a;
+  --color-secondary-content: #ffffff;
+
+  --color-accent: #81c784;
+  --color-accent-content: #1a1a1a;
+
+  --color-neutral: #2b2b2b;
+  --color-neutral-content: #ffffff;
+
+  --color-info: #0ea5e9;
+  --color-info-content: #ffffff;
+
+  --color-success: #43a047;
+  --color-success-content: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-content: #1a1a1a;
+
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+
+  /* soft brand tints (light theme) */
+  --tint-primary: rgba(76, 175, 80, 0.14);
+  --tint-success: rgba(67, 160, 71, 0.14);
+  --tint-warning: rgba(245, 158, 11, 0.14);
+}
+
+@plugin "daisyui/theme" {
+  name: "gfg-dark";
+  color-scheme: dark;
+
+  --color-base-100: #171b1a;
+  --color-base-200: #1f2422;
+  --color-base-300: #2a302d;
+  --color-base-content: #e8eae8;
+
+  /* lighter green family (dark theme — brightened so it reads on dark bg) */
+  --color-primary: #66bb6a;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #81c784;
+  --color-secondary-content: #1a1a1a;
+
+  --color-accent: #a5d6a7;
+  --color-accent-content: #1a1a1a;
+
+  --color-neutral: #2b2b2b;
+  --color-neutral-content: #e8eae8;
+
+  --color-info: #38bdf8;
+  --color-info-content: #1a1a1a;
+
+  --color-success: #4caf50;
+  --color-success-content: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-content: #1a1a1a;
+
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+
+  /* soft brand tints (dark theme — tuned a touch brighter for contrast) */
+  --tint-primary: rgba(102, 187, 106, 0.18);
+  --tint-success: rgba(76, 175, 80, 0.18);
+  --tint-warning: rgba(245, 158, 11, 0.2);
+}
+
+/* Soft tinted icon containers — the calm alternative to solid gradient boxes.
+   Same classes work in both themes via the --tint-* custom properties above. */
+@layer components {
+  .icon-tint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--tint-primary);
+    color: hsl(var(--p));
+    border-radius: 0.75rem;
+    flex-shrink: 0;
+  }
+  .icon-tint-success {
+    background-color: var(--tint-success);
+    color: hsl(var(--su));
+  }
+  .icon-tint-warning {
+    background-color: var(--tint-warning);
+    color: hsl(var(--wa));
+  }
 }
 
 /* Add cursor pointer to buttons by default - this is coming from tailwind docs */

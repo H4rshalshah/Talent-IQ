@@ -20,7 +20,6 @@
     "express-rate-limit": "^8.6.2",
     "inngest": "^3.44.3",
     "mongoose": "^8.19.1",
-    "openai": "^7.4.0",
     "stream-chat": "^9.24.0"
   },
   "devDependencies": {

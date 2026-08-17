@@ -341,20 +341,25 @@ print(maxArea([1,1]))  # Expected: 1`,
   },
 };
 
+// Full language set supported by the codegen templates. `executable` is false
+// for languages the current sandbox (Wandbox) cannot run — those are hidden
+// from the selector so a language is never selectable but non-functional.
 export const LANGUAGE_CONFIG = {
-  javascript: {
-    name: "JavaScript",
-    icon: "/javascript.png",
-    monacoLang: "javascript",
-  },
-  python: {
-    name: "Python",
-    icon: "/python.png",
-    monacoLang: "python",
-  },
-  java: {
-    name: "Java",
-    icon: "/java.png",
-    monacoLang: "java",
-  },
+  javascript: { name: "JavaScript", icon: "/javascript.png", monacoLang: "javascript", executable: true },
+  python: { name: "Python", icon: "/python.png", monacoLang: "python", executable: true },
+  java: { name: "Java", icon: "/java.png", monacoLang: "java", executable: true },
+  c: { name: "C", icon: "", monacoLang: "c", executable: true },
+  cpp: { name: "C++", icon: "", monacoLang: "cpp", executable: true },
+  csharp: { name: "C#", icon: "", monacoLang: "csharp", executable: true },
+  go: { name: "Go", icon: "", monacoLang: "go", executable: true },
+  rust: { name: "Rust", icon: "", monacoLang: "rust", executable: true },
+  php: { name: "PHP", icon: "", monacoLang: "php", executable: true },
+  ruby: { name: "Ruby", icon: "", monacoLang: "ruby", executable: true },
+  typescript: { name: "TypeScript", icon: "", monacoLang: "typescript", executable: false },
+  kotlin: { name: "Kotlin", icon: "", monacoLang: "kotlin", executable: false },
+  swift: { name: "Swift", icon: "", monacoLang: "swift", executable: false },
 };
+
+export const EXECUTABLE_LANGUAGES = Object.entries(LANGUAGE_CONFIG)
+  .filter(([, cfg]) => cfg.executable)
+  .map(([key]) => key);

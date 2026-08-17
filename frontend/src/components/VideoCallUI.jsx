@@ -2,6 +2,7 @@ import {
   CallControls,
   CallingState,
   SpeakerLayout,
+  useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon } from "lucide-react";
@@ -14,10 +15,33 @@ import "stream-chat-react/dist/css/v2/index.css";
 
 function VideoCallUI({ chatClient, channel }) {
   const navigate = useNavigate();
+  const call = useCall();
   const { useCallCallingState, useParticipantCount } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participantCount = useParticipantCount();
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // turn camera + mic off BEFORE leaving so the browser releases the devices
+  // immediately (camera/mic indicators turn off) instead of staying active.
+  const handleLeave = async () => {
+    try {
+      if (call) {
+        try {
+          await call.camera?.disable();
+        } catch (e) {
+          /* already off */
+        }
+        try {
+          await call.microphone?.disable();
+        } catch (e) {
+          /* already off */
+        }
+      }
+    } catch (e) {
+      /* best effort */
+    }
+    navigate("/dashboard");
+  };
 
   if (callingState === CallingState.JOINING) {
     return (
@@ -58,7 +82,7 @@ function VideoCallUI({ chatClient, channel }) {
         </div>
 
         <div className="bg-base-100 p-3 rounded-lg shadow flex justify-center">
-          <CallControls onLeave={() => navigate("/dashboard")} />
+          <CallControls onLeave={handleLeave} />
         </div>
       </div>
 

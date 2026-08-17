@@ -20,6 +20,7 @@ export async function reviewCode({
   problemId,
   problemTitle,
   problemStatement,
+  solutionApproach = "",
   language,
   code,
   testResults,
@@ -37,6 +38,7 @@ export async function reviewCode({
   const prompt = buildCodeReviewPrompt({
     problemTitle,
     problemStatement,
+    solutionApproach,
     language,
     code,
     testResults,
@@ -46,6 +48,7 @@ export async function reviewCode({
 
   try {
     const raw = await chatCompletionJson({
+      task: "review",
       system: "You are a senior engineer reviewing candidate code.",
       user: prompt,
       maxTokens: 900,

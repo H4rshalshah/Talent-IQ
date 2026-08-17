@@ -4,7 +4,7 @@ import Interview from "../models/Interview.js";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty } = req.body;
+    const { problem, problemSlug = "", difficulty } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -16,7 +16,7 @@ export async function createSession(req, res) {
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // create session in db
-    const session = await Session.create({ problem, difficulty, host: userId, callId });
+    const session = await Session.create({ problem, problemSlug, difficulty, host: userId, callId });
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
@@ -163,16 +163,25 @@ export async function endSession(req, res) {
       return res.status(400).json({ message: "Session is already completed" });
     }
 
-    // delete stream video call
-    const call = streamClient.video.call("default", session.callId);
-    await call.delete({ hard: true });
-
-    // delete stream chat channel
-    const channel = chatClient.channel("messaging", session.callId);
-    await channel.delete();
-
+    // Mark the session completed FIRST — the DB state change must never be
+    // blocked by an external-service hiccup (bad Stream key, deleted call,
+    // network error). Stream cleanup below is best-effort.
     session.status = "completed";
     await session.save();
+
+    // best-effort: tear down the stream video call + chat channel
+    try {
+      const call = streamClient.video.call("default", session.callId);
+      await call.delete({ hard: true });
+    } catch (error) {
+      console.warn("⚠️ Could not delete stream video call during end-session:", error.message);
+    }
+    try {
+      const channel = chatClient.channel("messaging", session.callId);
+      await channel.delete();
+    } catch (error) {
+      console.warn("⚠️ Could not delete stream chat channel during end-session:", error.message);
+    }
 
     // mark the linked human interview as completed
     try {

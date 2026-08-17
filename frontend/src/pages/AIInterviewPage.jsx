@@ -225,8 +225,8 @@ function AIInterviewPage() {
       <div className="bg-base-100 border-b border-base-300 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <BotIcon className="size-5 text-white" />
+            <div className="icon-tint size-10">
+              <BotIcon className="size-5" />
             </div>
             <div>
               <p className="font-bold leading-tight">
@@ -266,16 +266,16 @@ function AIInterviewPage() {
         </div>
       </div>
 
-      {/* MAIN 3-COLUMN */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 grid lg:grid-cols-[1fr_1.2fr_300px] gap-6">
+      {/* MAIN 3-COLUMN (stacks vertically on mobile) */}
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr_300px] gap-6">
         {/* LEFT: interviewer + progress */}
         <div className="space-y-6">
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <div className="flex items-center gap-3 mb-4">
                 <div className="relative">
-                  <div className="size-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <BotIcon className="size-6 text-white" />
+                  <div className="icon-tint size-12 rounded-full">
+                    <BotIcon className="size-6" />
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 size-3.5 bg-success rounded-full border-2 border-base-100" />
                 </div>
@@ -308,13 +308,32 @@ function AIInterviewPage() {
                     </span>
                     <p className="text-2xl font-bold leading-snug">{currentQuestion.question}</p>
                   </>
+                ) : getQuestionMutation.isError ? (
+                  <div className="card bg-error/5 border border-error/20 p-4">
+                    <p className="text-sm text-base-content/80 mb-3">
+                      {getQuestionMutation.error?.response?.data?.message ||
+                        "AI interviewer is temporarily unavailable."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        getQuestionMutation.reset();
+                        setIsGenerating(true);
+                        getQuestionMutation.mutate(
+                          { interviewId: id },
+                          {
+                            onSuccess: (response) => setCurrentQuestion(response?.data?.question),
+                            onSettled: () => setIsGenerating(false),
+                          }
+                        );
+                      }}
+                      className="btn btn-primary btn-sm gap-1"
+                    >
+                      <LoaderIcon className="size-4" />
+                      Retry question generation
+                    </button>
+                  </div>
                 ) : (
-                  <p className="text-base-content/60">
-                    {getQuestionMutation.isError
-                      ? getQuestionMutation.error?.response?.data?.message ||
-                        "AI interviewer is temporarily unavailable. Please try again."
-                      : "Preparing your interview..."}
-                  </p>
+                  <p className="text-base-content/60">Preparing your interview...</p>
                 )}
               </div>
             </div>

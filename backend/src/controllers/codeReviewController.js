@@ -44,10 +44,26 @@ export async function reviewCodeSubmission(req, res) {
       }
     }
 
+    // ground the review in the bank's canonical solution approach when the
+    // problem is one of ours (identified by slug)
+    let resolvedTitle = problemTitle;
+    let solutionApproach = "";
+    try {
+      const Problem = (await import("../models/Problem.js")).default;
+      const bankProblem = await Problem.findOne({ slug: problemId }).lean();
+      if (bankProblem) {
+        resolvedTitle = bankProblem.title;
+        solutionApproach = bankProblem.solutionApproach || "";
+      }
+    } catch (error) {
+      console.warn("⚠️ Could not load problem bank entry for review:", error.message);
+    }
+
     const review = await reviewCode({
       problemId,
-      problemTitle: problemTitle || problemId,
+      problemTitle: resolvedTitle || problemId,
       problemStatement: problemStatement || "",
+      solutionApproach,
       language,
       code,
       testResults,

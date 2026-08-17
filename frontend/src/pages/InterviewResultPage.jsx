@@ -166,12 +166,8 @@ function InterviewResultPage() {
             <span>Result</span>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            <div
-              className={`size-14 rounded-2xl flex items-center justify-center shadow-lg ${
-                isAi ? "bg-gradient-to-br from-primary to-secondary" : "bg-gradient-to-br from-secondary to-accent"
-              }`}
-            >
-              {isAi ? <BotIcon className="size-7 text-white" /> : <UsersIcon className="size-7 text-white" />}
+            <div className="icon-tint size-14">
+              {isAi ? <BotIcon className="size-7" /> : <UsersIcon className="size-7" />}
             </div>
             <div>
               <h1 className="text-3xl sm:text-4xl font-black">

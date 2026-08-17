@@ -44,20 +44,42 @@ export function localEmbedText(text) {
   return vec;
 }
 
-let openaiClient = null;
-
-async function getOpenAIClient() {
-  if (openaiClient) return openaiClient;
-  // lazy import so the backend boots even without the key installed
-  const { default: OpenAI } = await import("openai");
-  openaiClient = new OpenAI({ apiKey: ENV.OPENAI_API_KEY, baseURL: ENV.OPENAI_BASE_URL });
-  return openaiClient;
-}
-
 export function embeddingProvider() {
   if (ENV.EMBEDDING_PROVIDER === "local") return "local";
-  if (ENV.OPENAI_API_KEY) return "openai";
+  if (ENV.EMBEDDING_PROVIDER === "gemini" || (!ENV.EMBEDDING_PROVIDER && ENV.GEMINI_API_KEY)) {
+    return "gemini";
+  }
   return "local";
+}
+
+// Gemini embeddings (free tier, e.g. gemini-embedding-001). Uses the
+// batchEmbedContents endpoint, falling back to local hashing on any failure.
+const GEMINI_EMBED_URL = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents?key=${ENV.GEMINI_API_KEY}`;
+
+// keep each request well under Gemini's 2048-token input limit
+function truncate(text, maxChars = 8000) {
+  return text.length > maxChars ? text.slice(0, maxChars) : text;
+}
+
+async function geminiEmbedTexts(texts) {
+  const model = `models/${ENV.EMBEDDING_MODEL}`;
+  const res = await fetch(GEMINI_EMBED_URL(ENV.EMBEDDING_MODEL), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: texts.map((text) => ({
+        model,
+        content: { parts: [{ text: truncate(text) }] },
+      })),
+    }),
+  });
+
+  if (!res.ok) throw new Error(`gemini embeddings HTTP ${res.status}`);
+  const data = await res.json();
+  const embeddings = (data.embeddings || []).map((e) => e.values);
+  if (embeddings.length !== texts.length) throw new Error("gemini embeddings count mismatch");
+  return embeddings;
 }
 
 /**
@@ -68,17 +90,11 @@ export function embeddingProvider() {
 export async function embedTexts(texts) {
   const provider = embeddingProvider();
 
-  if (provider === "openai") {
+  if (provider === "gemini") {
     try {
-      const client = await getOpenAIClient();
-      const response = await client.embeddings.create({
-        model: ENV.EMBEDDING_MODEL,
-        input: texts,
-      });
-      return response.data.map((item) => item.embedding);
+      return await geminiEmbedTexts(texts);
     } catch (error) {
-      console.error("⚠️ OpenAI embedding failed, falling back to local embedding:", error.message);
-      return texts.map((t) => localEmbedText(t));
+      console.error("⚠️ Gemini embedding failed, falling back to local embedding:", error.message);
     }
   }
 

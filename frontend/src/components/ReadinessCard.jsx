@@ -31,16 +31,21 @@ function ReadinessCard({ data, isLoading }) {
   return (
     <div className="card bg-base-100 border-2 border-primary/20 hover:border-primary/40 transition-colors">
       <div className="card-body">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-primary to-secondary rounded-2xl">
-              <AwardIcon className="w-6 h-6 text-white" />
+            <div className="icon-tint size-12">
+              <AwardIcon className="size-6" />
             </div>
             <h2 className="text-xl font-black">Interview Readiness</h2>
           </div>
-          <span className="badge badge-primary badge-lg">
-            <FlameIcon className="size-4" /> {data?.interviewCount ?? 0} done
-          </span>
+          {/* pill on its own row so it can never overlap the title or wrap
+              awkwardly — padded by content, not fixed width */}
+          <div className="mt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-content whitespace-nowrap">
+              <FlameIcon className="size-4" />
+              {data?.interviewCount ?? 0} done
+            </span>
+          </div>
         </div>
 
         {/* READINESS SCORE */}
@@ -71,9 +76,9 @@ function ReadinessCard({ data, isLoading }) {
             </div>
           </div>
 
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-center gap-2 text-base-content/70">
-              <TrendingUpIcon className="size-4 text-success" />
+              <TrendingUpIcon className="size-4 text-success shrink-0" />
               <span className="text-sm font-medium">Based on your interview history</span>
             </div>
 
@@ -86,9 +91,9 @@ function ReadinessCard({ data, isLoading }) {
                 <p className="text-xs text-base-content/50 uppercase tracking-wide font-semibold mb-1">
                   Latest Interview
                 </p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold">{roleLabel(latest.role)}</span>
-                  <span className="badge badge-primary">Score: {latest.score ?? "—"}%</span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="font-bold min-w-0 truncate">{roleLabel(latest.role)}</span>
+                  <span className="badge badge-primary shrink-0">Score: {latest.score ?? "—"}%</span>
                 </div>
               </Link>
             ) : (
@@ -105,7 +110,7 @@ function ReadinessCard({ data, isLoading }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-base-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2Icon className="size-4 text-success" />
+              <CheckCircle2Icon className="size-4 text-success shrink-0" />
               <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
                 Strong Areas
               </h3>
@@ -125,7 +130,7 @@ function ReadinessCard({ data, isLoading }) {
 
           <div className="bg-base-200 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TriangleAlertIcon className="size-4 text-warning" />
+              <TriangleAlertIcon className="size-4 text-warning shrink-0" />
               <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
                 Improve Next
               </h3>

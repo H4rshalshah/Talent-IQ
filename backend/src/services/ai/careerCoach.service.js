@@ -52,6 +52,7 @@ export async function generateCareerRoadmap({
 
   try {
     const raw = await chatCompletionJson({
+      task: "roadmap",
       system: "You are an expert AI career coach.",
       user: prompt,
       maxTokens: 1600,

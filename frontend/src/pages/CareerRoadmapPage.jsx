@@ -47,8 +47,8 @@ function CareerRoadmapPage() {
       <div ref={revealRef} className="max-w-5xl mx-auto px-4 py-12">
         {/* HEADER */}
         <div className="reveal flex items-center gap-4 mb-8">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-warning to-secondary flex items-center justify-center shadow-lg">
-            <CompassIcon className="size-7 text-white" />
+          <div className="icon-tint icon-tint-warning size-14">
+            <CompassIcon className="size-7" />
           </div>
           <div>
             <h1 className="text-3xl font-black">AI Career Coach</h1>
@@ -194,7 +194,7 @@ function CareerRoadmapPage() {
                 <div key={week.week} className="reveal card bg-base-100 shadow-lg">
                   <div className="card-body">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-black text-white">
+                      <div className="icon-tint size-10 font-black">
                         {week.week}
                       </div>
                       <div>
@@ -236,7 +236,7 @@ function CareerRoadmapPage() {
               <Link to="/interviews/ai/configure" className="btn btn-primary gap-1">
                 Practice with an AI Interview <ArrowRightIcon className="size-4" />
               </Link>
-              <Link to="/problems" className="btn btn-outline gap-1">
+              <Link to="/practice" className="btn btn-outline gap-1">
                 Practice Coding <ArrowRightIcon className="size-4" />
               </Link>
             </div>

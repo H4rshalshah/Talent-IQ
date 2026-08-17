@@ -2,12 +2,14 @@ import { useUser } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
+import { useProblem } from "../hooks/usePracticeProblems";
 import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
+import { LANGUAGE_CONFIG } from "../data/problems";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 import AiReviewPanel from "../components/AiReviewPanel";
@@ -39,10 +41,36 @@ function SessionPage() {
     isParticipant
   );
 
-  // find the problem data based on session problem title
-  const problemData = session?.problem
+  // resolve the problem from the backend library (covers the full Codeforces
+  // bank + in-house problems); falls back to the legacy static list by title.
+  const { data: problemDetail } = useProblem(session?.problemSlug || "");
+  const dbProblem = problemDetail?.data?.problem;
+  const staticProblem = session?.problem
     ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
     : null;
+  const problemData = dbProblem || staticProblem;
+
+  // Codeforces-sourced problems have no statement/starter code in our DB —
+  // the room links out instead (licensing). The editor is replaced with a
+  // notice, but video + chat keep working normally.
+  const isExternalProblem = Boolean(problemData?.source === "codeforces");
+
+  // normalize backend problem docs into the shape SessionPage renders
+  // (description text/notes, examples, constraints, expectedOutput per lang)
+  const normalizedProblem = problemData?.source
+    ? {
+        ...problemData,
+        description: {
+          text: problemData.description || "",
+          notes: [],
+        },
+        category: problemData.tags?.[0] || "",
+        expectedOutput:
+          problemData.expectedOutput && problemData.starterCode
+            ? Object.fromEntries(Object.keys(problemData.starterCode).map((l) => [l, problemData.expectedOutput]))
+            : problemData.expectedOutput,
+      }
+    : problemData;
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
@@ -92,10 +120,28 @@ function SessionPage() {
   };
 
   const handleEndSession = () => {
-    if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
+    // turn camera + mic off first so the devices are released the moment the
+    // session ends (the browser indicator turns off immediately)
+    (async () => {
+      try {
+        if (call) {
+          try {
+            await call.camera?.disable();
+          } catch (e) {
+            /* already off */
+          }
+          try {
+            await call.microphone?.disable();
+          } catch (e) {
+            /* already off */
+          }
+        }
+      } catch (e) {
+        /* best effort */
+      }
       // this will navigate the HOST to dashboard
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
-    }
+    })();
   };
 
   return (
@@ -113,12 +159,18 @@ function SessionPage() {
                   {/* HEADER SECTION */}
                   <div className="p-6 bg-base-100 border-b border-base-300">
                     <div className="flex items-start justify-between mb-3">
-                      <div>
+                      <div className="min-w-0">
                         <h1 className="text-3xl font-bold text-base-content">
                           {session?.problem || "Loading..."}
                         </h1>
-                        {problemData?.category && (
-                          <p className="text-base-content/60 mt-1">{problemData.category}</p>
+                        {normalizedProblem?.category && (
+                          <p className="text-base-content/60 mt-1">{normalizedProblem.category}</p>
+                        )}
+                        {isExternalProblem && problemData?.rating && (
+                          <p className="text-base-content/60 mt-1">
+                            Codeforces · Rating {problemData.rating} ·{" "}
+                            {(problemData.tags || []).slice(0, 4).join(", ")}
+                          </p>
                         )}
                         <p className="text-base-content/60 mt-2">
                           Host: {session?.host?.name || "Loading..."} •{" "}
@@ -135,6 +187,16 @@ function SessionPage() {
                           {session?.difficulty.slice(0, 1).toUpperCase() +
                             session?.difficulty.slice(1) || "Easy"}
                         </span>
+                        {isExternalProblem && problemData?.url && (
+                          <a
+                            href={problemData.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary btn-sm gap-1"
+                          >
+                            Open on Codeforces
+                          </a>
+                        )}
                         {isHost && session?.status === "active" && (
                           <button
                             onClick={handleEndSession}
@@ -158,12 +220,12 @@ function SessionPage() {
 
                   <div className="p-6 space-y-6">
                     {/* problem desc */}
-                    {problemData?.description && (
+                    {normalizedProblem?.description?.text && (
                       <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
                         <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
                         <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{problemData.description.text}</p>
-                          {problemData.description.notes?.map((note, idx) => (
+                          <p className="text-base-content/90">{normalizedProblem.description.text}</p>
+                          {normalizedProblem.description.notes?.map((note, idx) => (
                             <p key={idx} className="text-base-content/90">
                               {note}
                             </p>
@@ -173,12 +235,12 @@ function SessionPage() {
                     )}
 
                     {/* examples section */}
-                    {problemData?.examples && problemData.examples.length > 0 && (
+                    {normalizedProblem?.examples && normalizedProblem.examples.length > 0 && (
                       <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
                         <h2 className="text-xl font-bold mb-4 text-base-content">Examples</h2>
 
                         <div className="space-y-4">
-                          {problemData.examples.map((example, idx) => (
+                          {normalizedProblem.examples.map((example, idx) => (
                             <div key={idx}>
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="badge badge-sm">{idx + 1}</span>
@@ -213,11 +275,11 @@ function SessionPage() {
                     )}
 
                     {/* Constraints */}
-                    {problemData?.constraints && problemData.constraints.length > 0 && (
+                    {normalizedProblem?.constraints && normalizedProblem.constraints.length > 0 && (
                       <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
                         <h2 className="text-xl font-bold mb-4 text-base-content">Constraints</h2>
                         <ul className="space-y-2 text-base-content/90">
-                          {problemData.constraints.map((constraint, idx) => (
+                          {normalizedProblem.constraints.map((constraint, idx) => (
                             <li key={idx} className="flex gap-2">
                               <span className="text-primary">•</span>
                               <code className="text-sm">{constraint}</code>
@@ -235,19 +297,57 @@ function SessionPage() {
               <Panel defaultSize={50} minSize={20}>
                 <PanelGroup direction="vertical">
                   <Panel defaultSize={70} minSize={30}>
-                    <CodeEditorPanel
-                      selectedLanguage={selectedLanguage}
-                      code={code}
-                      isRunning={isRunning}
-                      onLanguageChange={handleLanguageChange}
-                      onCodeChange={(value) => setCode(value)}
-                      onRunCode={handleRunCode}
-                    />
+                    {isExternalProblem ? (
+                      <div className="h-full flex items-center justify-center bg-base-100">
+                        <div className="card bg-base-200 shadow-sm max-w-md w-full mx-6">
+                          <div className="card-body items-center text-center">
+                            <p className="font-bold text-lg">Problem hosted on Codeforces</p>
+                            <p className="text-base-content/70 text-sm">
+                              This room uses a Codeforces problem. Open it in a new tab to read
+                              the statement and solve it — you can still discuss and share your
+                              screen with the video call on the right.
+                            </p>
+                            {problemData?.url && (
+                              <a
+                                href={problemData.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-primary gap-1"
+                              >
+                                Open on Codeforces
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <CodeEditorPanel
+                        selectedLanguage={selectedLanguage}
+                        languages={
+                          problemData
+                            ? Object.keys(problemData.starterCode || {}).filter(
+                                (l) => LANGUAGE_CONFIG[l]?.executable
+                              )
+                            : []
+                        }
+                        code={code}
+                        isRunning={isRunning}
+                        onLanguageChange={handleLanguageChange}
+                        onCodeChange={(value) => setCode(value)}
+                        onRunCode={handleRunCode}
+                      />
+                    )}
                   </Panel>
 
                   <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
 
                   <Panel defaultSize={30} minSize={15}>
+                    {isExternalProblem ? (
+                      <div className="h-full flex items-center justify-center bg-base-100 text-base-content/40 text-sm px-6 text-center">
+                        Code editor is available for in-house problems — for Codeforces
+                        problems, solve on the Codeforces site and share your screen.
+                      </div>
+                    ) : (
                     <div className="h-full flex flex-col">
                       <div className="flex bg-base-200 border-b border-base-300">
                         <button
@@ -287,6 +387,7 @@ function SessionPage() {
                         )}
                       </div>
                     </div>
+                    )}
                   </Panel>
                 </PanelGroup>
               </Panel>

@@ -79,9 +79,7 @@ function HomePage() {
             </div>
 
             <div className="flex flex-col">
-              <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-                Talent IQ
-              </span>
+              <span className="font-black text-xl text-primary font-mono tracking-wider">Talent IQ</span>
               <span className="text-xs text-base-content/60 font-medium -mt-1">
                 Interview Smarter
               </span>
@@ -90,7 +88,7 @@ function HomePage() {
 
           {!isSignedIn && (
             <SignInButton mode="modal">
-              <button className="group px-6 py-3 bg-gradient-to-r from-primary to-secondary rounded-xl text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2">
+              <button className="group px-6 py-3 bg-primary rounded-xl text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 flex items-center gap-2">
                 <span>Get Started</span>
                 <ArrowRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
@@ -116,9 +114,7 @@ function HomePage() {
             </div>
 
             <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.08]">
-              <span className="hero-line block bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                Prepare Smarter.
-              </span>
+              <span className="hero-line block text-primary">Prepare Smarter.</span>
               <span className="hero-line block text-base-content">Interview Better.</span>
               <span className="hero-line block text-base-content">Grow Faster.</span>
             </h1>
@@ -146,7 +142,7 @@ function HomePage() {
                 </SignInButton>
               )}
 
-              <Link to={isSignedIn ? "/problems" : "/"} className="hero-cta btn btn-outline btn-lg gap-2">
+              <Link to={isSignedIn ? "/practice" : "/"} className="hero-cta btn btn-outline btn-lg gap-2">
                 <Code2Icon className="size-5" />
                 Practice Coding
               </Link>
@@ -289,7 +285,7 @@ function HomePage() {
         </div>
 
         {/* CTA BAND */}
-        <div className="reveal mt-20 card bg-gradient-to-r from-primary via-secondary to-accent text-white shadow-2xl">
+        <div className="reveal mt-20 card bg-primary text-white shadow-2xl">
           <div className="card-body md:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-2xl font-black mb-1">Ready to interview smarter?</h3>

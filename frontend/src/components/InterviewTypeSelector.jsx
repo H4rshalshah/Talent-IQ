@@ -11,7 +11,7 @@ const MODES = [
     description:
       "Conversational interview with a RAG-grounded AI interviewer. Adaptive difficulty, instant evaluation, and a performance report at the end.",
     features: ["Adaptive questioning", "RAG-grounded", "Instant evaluation", "Performance report"],
-    gradient: "from-primary to-secondary",
+    primary: true,
     to: "/interviews/ai/configure",
   },
   {
@@ -21,7 +21,7 @@ const MODES = [
     description:
       "Live 1-on-1 interview with another person. Video, audio, screen sharing, real-time chat, and collaborative coding in a shared room.",
     features: ["HD video call", "Screen sharing", "Real-time chat", "Collaborative coding"],
-    gradient: "from-secondary to-accent",
+    primary: false,
     to: "/interviews/human",
   },
 ];
@@ -83,11 +83,15 @@ function InterviewTypeSelector() {
           >
             <div className="card-body p-6">
               <div className="flex items-center justify-between mb-4">
-                <div
-                  className={`size-14 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center shadow-lg`}
-                >
-                  <Icon className="size-7 text-white" />
-                </div>
+                {mode.primary ? (
+                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center">
+                    <Icon className="size-7 text-primary-content" />
+                  </div>
+                ) : (
+                  <div className="icon-tint size-14">
+                    <Icon className="size-7" />
+                  </div>
+                )}
                 <span className="badge badge-ghost badge-lg">
                   {isSelected ? "Selected..." : "Choose"}
                 </span>

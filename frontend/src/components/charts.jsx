@@ -32,7 +32,7 @@ export function SkillBars({ items }) {
           </div>
           <div className="h-3 bg-base-200 rounded-full overflow-hidden">
             <div
-              className="skill-fill h-full rounded-full bg-gradient-to-r from-primary to-secondary"
+              className="skill-fill h-full rounded-full bg-primary"
               style={{ width: 0 }}
             />
           </div>

@@ -6,6 +6,12 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // slug into the Problem collection (custom or codeforces) so the session
+    // can resolve full problem data instead of relying on a static title list
+    problemSlug: {
+      type: String,
+      default: "",
+    },
     difficulty: {
       type: String,
       enum: ["easy", "medium", "hard"],

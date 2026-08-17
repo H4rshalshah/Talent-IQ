@@ -1,64 +1,74 @@
-// Piston API is a service for code execution
+// Code execution via the Wandbox public API.
+// (Piston/emkc.org became whitelist-only on 2026-02-15, so execution moved to
+// Wandbox — free, no key. Mirrors backend/src/services/problems/executor.service.js.)
 
-const PISTON_API = "https://emkc.org/api/v2/piston";
+const WANDBOX_URL = "https://wandbox.org/api/compile.json";
 
-const LANGUAGE_VERSIONS = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
+// language key -> Wandbox compiler name
+const WANDBOX_COMPILERS = {
+  javascript: "nodejs-20.17.0",
+  python: "cpython-3.13.8",
+  java: "openjdk-jdk-22+36",
+  c: "gcc-13.2.0-c",
+  cpp: "gcc-13.2.0",
+  csharp: "mono-6.12.0.199",
+  go: "go-1.23.2",
+  rust: "rust-1.82.0",
+  php: "php-8.3.12",
+  ruby: "ruby-4.0.2",
+};
+
+const COMPILER_OPTIONS = {
+  cpp: "-x c++ -std=c++17 -O2",
 };
 
 /**
  * @param {string} language - programming language
- * @param {string} code - source code to executed
- * @returns {Promise<{success:boolean, output?:string, error?: string}>}
+ * @param {string} code - source code to execute
+ * @returns {Promise<{success:boolean, output?:string, error?:string}>}
  */
 export async function executeCode(language, code) {
+  const compiler = WANDBOX_COMPILERS[language];
+
+  if (!compiler) {
+    return {
+      success: false,
+      error: `Unsupported language: ${language}`,
+    };
+  }
+
   try {
-    const languageConfig = LANGUAGE_VERSIONS[language];
-
-    if (!languageConfig) {
-      return {
-        success: false,
-        error: `Unsupported language: ${language}`,
-      };
-    }
-
-    const response = await fetch(`${PISTON_API}/execute`, {
+    const response = await fetch(WANDBOX_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        language: languageConfig.language,
-        version: languageConfig.version,
-        files: [
-          {
-            name: `main.${getFileExtension(language)}`,
-            content: code,
-          },
-        ],
+        compiler,
+        code,
+        stdin: "",
+        options: COMPILER_OPTIONS[language] || "",
       }),
     });
 
     if (!response.ok) {
-      return {
-        success: false,
-        error: `HTTP error! status: ${response.status}`,
-      };
+      return { success: false, error: `Execution service error (HTTP ${response.status})` };
     }
 
     const data = await response.json();
+    const output = data.program_output || "";
+    const compilerError = data.compiler_error || data.compiler_message || "";
+    const programError = data.program_error || "";
+    const signal = data.signal || "";
 
-    const output = data.run.output || "";
-    const stderr = data.run.stderr || "";
-
-    if (stderr) {
-      return {
-        success: false,
-        output: output,
-        error: stderr,
-      };
+    if (signal) {
+      return { success: false, output, error: `Execution terminated (${signal})` };
+    }
+    if (compilerError) {
+      return { success: false, output, error: compilerError.slice(0, 2000) };
+    }
+    if (programError) {
+      return { success: false, output, error: programError.slice(0, 2000) };
     }
 
     return {
@@ -71,14 +81,4 @@ export async function executeCode(language, code) {
       error: `Failed to execute code: ${error.message}`,
     };
   }
-}
-
-function getFileExtension(language) {
-  const extensions = {
-    javascript: "js",
-    python: "py",
-    java: "java",
-  };
-
-  return extensions[language] || "txt";
 }

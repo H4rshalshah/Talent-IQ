@@ -15,12 +15,13 @@ const syncUser = inngest.createFunction(
 
     const newUser = {
       clerkId: id,
-      email: email_addresses[0]?.email_address,
-      name: `${first_name || ""} ${last_name || ""}`,
-      profileImage: image_url,
+      email: email_addresses[0]?.email_address || `${id}@clerk.local`,
+      name: `${first_name || ""} ${last_name || ""}`.trim() || "Candidate",
+      profileImage: image_url || "",
     };
 
-    await User.create(newUser);
+    // upsert so the webhook never collides with auto-provisioning
+    await User.updateOne({ clerkId: id }, { $set: newUser }, { upsert: true });
 
     await upsertStreamUser({
       id: newUser.clerkId.toString(),

@@ -31,6 +31,8 @@ export async function generatePerformanceReport(interview, questions) {
 
   try {
     const raw = await chatCompletionJson({
+      task: "report",
+      useFallback: false,
       system: "You are an expert interviewer generating performance reports.",
       user: buildPerformanceReportPrompt({
         role: roleLabel(interview.role),

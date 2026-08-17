@@ -64,12 +64,31 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
 
     if (session && !loadingSession) initCall();
 
-    // cleanup - performance reasons
+    // cleanup — turn the camera/mic OFF and leave the call so the devices
+    // are actually released (browser indicator turns off, like other coding-
+    // interview platforms). Disabling before leave() stops the local tracks;
+    // without this the camera light can stay on after leaving.
     return () => {
       // iife
       (async () => {
         try {
-          if (videoCall) await videoCall.leave();
+          if (videoCall) {
+            try {
+              await videoCall.camera?.disable();
+            } catch (e) {
+              /* camera may already be off */
+            }
+            try {
+              await videoCall.microphone?.disable();
+            } catch (e) {
+              /* mic may already be off */
+            }
+            try {
+              await videoCall.leave();
+            } catch (e) {
+              /* call may already be left/deleted */
+            }
+          }
           if (chatClientInstance) await chatClientInstance.disconnectUser();
           await disconnectStreamClient();
         } catch (error) {

@@ -108,7 +108,7 @@ export async function generateQuestion(interview, options = {}) {
           candidateState,
         });
 
-    const raw = await chatCompletionJson({ system: "You are an adaptive technical interviewer.", user: prompt });
+    const raw = await chatCompletionJson({ task: "interview", system: "You are an adaptive technical interviewer.", user: prompt });
     result = {
       question: String(raw.question || "").trim(),
       topic: String(raw.topic || topic).trim(),
@@ -182,7 +182,7 @@ export async function evaluateAnswer(interview, question, answer) {
 
   let evaluation;
   try {
-    const raw = await chatCompletionJson({ system: "You are an expert interviewer.", user: prompt });
+    const raw = await chatCompletionJson({ task: "evaluation", system: "You are an expert interviewer.", user: prompt });
     evaluation = sanitizeEvaluation(raw);
   } catch (error) {
     console.error("⚠️ LLM evaluation failed:", error.message);

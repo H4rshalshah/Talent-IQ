@@ -5,6 +5,7 @@ import { useDashboardData } from "../hooks/useInterviews";
 
 import Navbar from "../components/Navbar";
 import StatsCards from "../components/StatsCards";
+import ProblemStatsCard from "../components/ProblemStatsCard";
 import ActiveSessions from "../components/ActiveSessions";
 import RecentSessions from "../components/RecentSessions";
 import ReadinessCard from "../components/ReadinessCard";
@@ -35,15 +36,13 @@ function DashboardPage() {
         {/* WELCOME */}
         <div className="relative overflow-hidden">
           <div className="relative max-w-7xl mx-auto px-6 py-10">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <SparklesIcon className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+              <SparklesIcon className="size-9 text-primary shrink-0" aria-hidden />
+              <h1 className="text-3xl sm:text-4xl font-black text-primary">
                 Welcome back, {user?.firstName || "there"}!
               </h1>
             </div>
-            <p className="text-lg text-base-content/60 ml-0 sm:ml-[60px]">
+            <p className="text-lg text-base-content/60">
               Ready to level up your interview game?
             </p>
           </div>
@@ -71,7 +70,8 @@ function DashboardPage() {
             </div>
           </div>
 
-          <div className="reveal mt-6">
+          <div className="reveal mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ProblemStatsCard />
             <StatsCards
               activeSessionsCount={activeSessions.length}
               recentSessionsCount={recentSessions.length}

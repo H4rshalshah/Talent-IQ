@@ -2,7 +2,7 @@ import { TrophyIcon, UsersIcon } from "lucide-react";
 
 function StatsCards({ activeSessionsCount, recentSessionsCount }) {
   return (
-    <div className="lg:col-span-1 grid grid-cols-1 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 h-full">
       {/* Active Count */}
       <div className="card bg-base-100 border-2 border-primary/20 hover:border-primary/40">
         <div className="card-body">

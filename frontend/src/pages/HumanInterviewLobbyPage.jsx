@@ -4,7 +4,7 @@ import { ChevronLeftIcon, LoaderIcon, PlusIcon, UsersIcon, VideoIcon } from "luc
 import Navbar from "../components/Navbar";
 import { useActiveSessions, useCreateSession } from "../hooks/useSessions";
 import { useUser } from "@clerk/clerk-react";
-import { PROBLEMS } from "../data/problems";
+import { usePracticeProblems } from "../hooks/usePracticeProblems";
 import { getDifficultyBadgeClass } from "../lib/utils";
 
 function HumanInterviewLobbyPage() {
@@ -15,8 +15,26 @@ function HumanInterviewLobbyPage() {
   const { data: activeSessionsData, isLoading: loadingActiveSessions } = useActiveSessions();
 
   const [problem, setProblem] = useState("");
+  const [problemSlug, setProblemSlug] = useState("");
   const [difficulty, setDifficulty] = useState("");
-  const problems = Object.values(PROBLEMS);
+  // in-house problems first, then the most-solved Codeforces problems so the
+  // picker covers the whole library instead of the old 5 hardcoded titles
+  const { data: customData, isLoading: loadingCustom } = usePracticeProblems({
+    page: 1,
+    limit: 100,
+    source: "custom",
+  });
+  const { data: cfData, isLoading: loadingCf } = usePracticeProblems({
+    page: 1,
+    limit: 100,
+    source: "codeforces",
+    sort: "solved",
+  });
+  const loadingProblems = loadingCustom || loadingCf;
+  const problems = [
+    ...(customData?.data?.problems || []),
+    ...(cfData?.data?.problems || []),
+  ];
 
   const activeSessions = activeSessionsData?.sessions || [];
 
@@ -26,15 +44,18 @@ function HumanInterviewLobbyPage() {
   };
 
   const handleProblemChange = (e) => {
-    const selected = problems.find((p) => p.title === e.target.value);
-    setProblem(e.target.value);
-    setDifficulty(selected?.difficulty || "");
+    const selected = problems.find((p) => p.slug === e.target.value);
+    setProblem(selected?.title || "");
+    setProblemSlug(selected?.slug || "");
+    // Session difficulty only accepts easy/medium/hard
+    const d = String(selected?.difficulty || "").toLowerCase();
+    setDifficulty(d === "expert" ? "hard" : d);
   };
 
   const handleCreate = () => {
     if (!problem || !difficulty) return;
     createSessionMutation.mutate(
-      { problem, difficulty: difficulty.toLowerCase() },
+      { problem, problemSlug, difficulty },
       {
         onSuccess: (data) => navigate(`/session/${data.session._id}`),
       }
@@ -52,7 +73,7 @@ function HumanInterviewLobbyPage() {
 
         {/* HEADER */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-secondary to-accent flex items-center justify-center shadow-lg">
+          <div className="icon-tint size-14">
             <UsersIcon className="size-7 text-white" />
           </div>
           <div>
@@ -80,16 +101,28 @@ function HumanInterviewLobbyPage() {
                     <span className="label-text font-semibold">Select Problem</span>
                     <span className="label-text-alt text-error">*</span>
                   </label>
-                  <select className="select w-full" value={problem} onChange={handleProblemChange}>
-                    <option value="" disabled>
-                      Choose a coding problem...
-                    </option>
-                    {problems.map((p) => (
-                      <option key={p.id} value={p.title}>
-                        {p.title} ({p.difficulty})
+                  {loadingProblems ? (
+                    <div className="flex items-center gap-2 text-sm text-base-content/60 py-2">
+                      <LoaderIcon className="size-4 animate-spin" />
+                      Loading problems...
+                    </div>
+                  ) : (
+                    <select
+                      className="select w-full"
+                      value={problemSlug || problem}
+                      onChange={handleProblemChange}
+                    >
+                      <option value="" disabled>
+                        Choose a coding problem...
                       </option>
-                    ))}
-                  </select>
+                      {problems.map((p) => (
+                        <option key={p.slug} value={p.slug}>
+                          {p.title} · {p.difficulty}
+                          {p.source === "codeforces" ? ` · CF ${p.rating || ""}` : " · In-house"}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {difficulty && (

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
   BookOpenIcon,
@@ -5,19 +6,29 @@ import {
   LayoutDashboardIcon,
   LineChartIcon,
   MessagesSquareIcon,
+  MoonIcon,
   SparklesIcon,
+  SunIcon,
 } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
 
+const THEME_KEY = "talentiq-theme";
+
 function Navbar() {
   const location = useLocation();
+  const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === "gfg-dark");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "gfg-dark" : "gfg";
+    localStorage.setItem(THEME_KEY, dark ? "gfg-dark" : "gfg");
+  }, [dark]);
 
   const isActive = (path) => location.pathname === path;
 
   const links = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
     { to: "/interviews", label: "Interviews", icon: MessagesSquareIcon },
-    { to: "/problems", label: "Practice", icon: BookOpenIcon },
+    { to: "/practice", label: "Practice", icon: BookOpenIcon },
     { to: "/performance", label: "Performance", icon: LineChartIcon },
     { to: "/career-roadmap", label: "Career Coach", icon: CompassIcon },
   ];
@@ -35,9 +46,7 @@ function Navbar() {
           </div>
 
           <div className="flex flex-col">
-            <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">
-              Talent IQ
-            </span>
+            <span className="font-black text-xl text-primary font-mono tracking-wider">Talent IQ</span>
             <span className="text-xs text-base-content/60 font-medium -mt-1">
               Interview Smarter
             </span>
@@ -84,7 +93,15 @@ function Navbar() {
           })}
         </div>
 
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setDark((d) => !d)}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            className="btn btn-ghost btn-circle btn-sm"
+          >
+            {dark ? <SunIcon className="size-5" /> : <MoonIcon className="size-5" />}
+          </button>
           <UserButton />
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { BotIcon, ChevronLeftIcon, LoaderIcon, Settings2Icon, SparklesIcon } from "lucide-react";
 import Navbar from "../components/Navbar";
+import ThinSlider from "../components/ThinSlider";
 import { useCreateAiInterview } from "../hooks/useInterviews";
 import {
   DIFFICULTIES,
@@ -67,8 +68,8 @@ function AIInterviewSetupPage() {
 
         {/* HEADER */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-            <BotIcon className="size-7 text-white" />
+          <div className="icon-tint size-14">
+            <BotIcon className="size-7" />
           </div>
           <div>
             <h1 className="text-3xl font-black">Configure AI Interview</h1>
@@ -199,27 +200,14 @@ function AIInterviewSetupPage() {
               </div>
             </div>
 
-            {/* NUM QUESTIONS */}
-            <div>
-              <label className="label">
-                <span className="label-text font-semibold">
-                  Number of Questions: <span className="text-primary font-bold">{config.numQuestions}</span>
-                </span>
-              </label>
-              <input
-                type="range"
-                min={3}
-                max={20}
-                value={config.numQuestions}
-                onChange={(e) => update({ numQuestions: Number(e.target.value) })}
-                className="range range-primary"
-              />
-              <div className="flex justify-between text-xs text-base-content/50 px-1 mt-1">
-                <span>3</span>
-                <span>10</span>
-                <span>20</span>
-              </div>
-            </div>
+            {/* NUM QUESTIONS — thin animated slider */}
+            <ThinSlider
+              min={3}
+              max={20}
+              value={config.numQuestions}
+              onChange={(v) => update({ numQuestions: v })}
+              label="Number of Questions"
+            />
 
             <div className="alert alert-info">
               <Settings2Icon className="size-5" />

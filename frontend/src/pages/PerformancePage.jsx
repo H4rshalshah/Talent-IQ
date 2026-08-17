@@ -53,7 +53,7 @@ function PerformancePage() {
       <div ref={revealRef} className="max-w-6xl mx-auto px-4 py-12">
         {/* HEADER */}
         <div className="reveal flex items-center gap-4 mb-8">
-          <div className="size-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+          <div className="icon-tint size-14">
             <LineChartIcon className="size-7 text-white" />
           </div>
           <div>
