@@ -1,0 +1,240 @@
+[
+  {
+    "title": "Arrays and Hashing",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "easy",
+    "content": "Arrays store elements in contiguous memory and offer O(1) index access but O(n) insertion/removal at arbitrary positions. Hash tables (hash maps / dictionaries) store key-value pairs and provide average O(1) lookup, insert and delete by hashing keys into buckets and resolving collisions with chaining or open addressing. They trade space for speed and are the most common tool for 'check if an element exists' style problems. Common patterns: complement pairs (two-sum), frequency counting, deduplication, and prefix sums. Trade-offs: hash tables lose ordering and are slower on cache than arrays; for small n a simple array scan can win."
+  },
+  {
+    "title": "Linked Lists",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "easy",
+    "content": "A linked list is a linear collection of nodes, each holding a value and a pointer to the next node. Singly linked lists allow O(1) insertion/deletion at the head and O(n) traversal; doubly linked lists add a prev pointer for O(1) deletion given a node. There is no O(1) random access. Common interview techniques: two pointers (fast/slow for cycle detection and middle finding), reversing a list in place by rewiring pointers, and dummy head nodes to simplify edge cases around the head. Space is O(n) for n nodes. Linked lists shine in problems about merging, reordering, and detecting cycles."
+  },
+  {
+    "title": "Stacks and Queues",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "easy",
+    "content": "A stack is a LIFO structure supporting push, pop and peek in O(1); it models call stacks, undo histories, and balanced-delimiter checks. A queue is FIFO supporting enqueue and dequeue in O(1) (array-based circular buffers or linked lists); it models BFS traversal, task scheduling and rate limiting. A deque supports both ends. Interview staples: implementing a queue with two stacks, monotonic stacks for next-greater-element style problems, and using stacks for expression evaluation. Choosing the right abstract data type is often the whole solution."
+  },
+  {
+    "title": "Trees and Binary Search Trees",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "medium",
+    "content": "A binary tree has nodes with at most two children; traversals are preorder, inorder, postorder and level-order. A binary search tree keeps the invariant left < node < right, giving O(log n) average search/insert/delete and O(n) worst case when unbalanced. Balanced variants (AVL, red-black) restore O(log n). Depth-first search is naturally recursive (or uses an explicit stack); breadth-first uses a queue and finds shortest paths in unweighted trees. Classic problems: lowest common ancestor, max depth, validating a BST (inorder must be sorted), and tree serialization. Recursion on trees must be mindful of stack depth for very deep trees."
+  },
+  {
+    "title": "Graphs: Representations and Traversals",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "medium",
+    "content": "Graphs model relationships. Adjacency lists use O(V+E) space and are the default representation; adjacency matrices use O(V^2) but give O(1) edge checks. DFS explores depth-first using recursion or a stack and is useful for connectivity, cycle detection, topological sort and SCCs. BFS explores level by level with a queue and finds the shortest path in unweighted graphs. Dijkstra (with a min-heap) finds shortest paths with non-negative weights in O((V+E) log V); Bellman-Ford handles negative weights; Floyd-Warshall handles all-pairs. Topological sort applies to DAGs (dependency ordering). Cycle detection in directed graphs uses visiting states; in undirected graphs a visited set plus parent check suffices."
+  },
+  {
+    "title": "Heaps and Priority Queues",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "medium",
+    "content": "A heap is a complete binary tree satisfying the heap property: in a min-heap every parent is <= its children. Insert and extract-min/max run in O(log n); peek is O(1). Heaps back priority queues and are the workhorse for top-k problems (maintain a heap of size k), k-way merging, and Dijkstra. Building a heap from an array is O(n). A common pitfall is using a full sort (O(n log n)) where a heap of size k (O(n log k)) is cheaper. In JavaScript, implement heaps with arrays (index math: left = 2i+1, right = 2i+2, parent = floor((i-1)/2)) since there is no built-in heap."
+  },
+  {
+    "title": "Sorting Algorithms",
+    "role": "software-engineer",
+    "topic": "algorithms",
+    "difficulty": "easy",
+    "content": "Comparison sorts: quicksort (O(n log n) average, O(n^2) worst) partitions around a pivot; mergesort (O(n log n) always) divides and merges with O(n) extra space and is stable; heapsort is in-place O(n log n) but not stable; insertion sort is O(n^2) but excellent on nearly-sorted input. Non-comparison sorts like counting sort and radix sort reach O(n + k) for integers in bounded ranges. Stable sorting preserves relative order of equal keys, which matters when sorting by multiple criteria. In interviews, know the time/space trade-offs and when each is appropriate, and always reason about worst-case inputs."
+  },
+  {
+    "title": "Two Pointers and Sliding Window",
+    "role": "software-engineer",
+    "topic": "algorithms",
+    "difficulty": "medium",
+    "content": "The two-pointer technique uses two indices to scan an array from both ends (e.g., container with most water, valid palindrome) or at different speeds (fast/slow). It converts O(n^2) brute force into O(n) for sorted or structured inputs. The sliding window maintains a contiguous subarray/window and expands/contracts one end at a time; it solves 'longest/shortest subarray satisfying a condition' in O(n) when the window condition is monotonic. Both techniques avoid recomputation by reusing prior work. Key detail: the invariant that lets you move a pointer without losing the answer — articulate it before coding."
+  },
+  {
+    "title": "Dynamic Programming",
+    "role": "software-engineer",
+    "topic": "algorithms",
+    "difficulty": "hard",
+    "content": "Dynamic programming solves problems by combining solutions to overlapping subproblems. Two steps: define a state (what does dp[i] mean?) and a recurrence (how do larger states build on smaller ones?). Implement bottom-up (tabular) or top-down (memoized recursion). Classic problems: Fibonacci, knapsack, longest increasing subsequence, edit distance, coin change, house robber. Identify DP by 'count the ways', 'minimize/maximize', or 'is it possible' with overlapping subproblems. Optimization: rolling arrays to reduce space from O(n^2) to O(n), and greedy is NOT DP — greedy makes the locally optimal choice and is only correct when a proof shows it is globally optimal."
+  },
+  {
+    "title": "Recursion and Backtracking",
+    "role": "software-engineer",
+    "topic": "algorithms",
+    "difficulty": "medium",
+    "content": "Recursion solves a problem by solving smaller instances of itself; every recursive function needs a base case and a recursive step that makes progress. Backtracking is DFS over a decision tree: choose, explore, undo (prune). It generates permutations, combinations, subsets and solves constraint problems like N-Queens and Sudoku. Complexity is often exponential in the worst case, so pruning and early termination matter. Watch for: forgetting to undo choices, infinite recursion from missing base cases, and stack overflow on deep recursion — prefer iteration or an explicit stack when depth is unbounded."
+  },
+  {
+    "title": "System Design: Scalability Fundamentals",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Scalability means a system keeps performing as load grows. Vertical scaling adds resources to one machine; horizontal scaling adds machines behind a load balancer. Stateless services scale horizontally; state (sessions, caches) must move to shared stores (Redis, databases). Replication gives read scaling and fault tolerance; sharding/partitioning splits data by key. Consistency models span the CAP spectrum: strong consistency vs availability under partitions. Key components to discuss: load balancers, CDNs, caches (write-through, write-back, cache-aside), message queues for async decoupling, and database indexing. Always quantify: current load, growth, latency targets, and failure modes."
+  },
+  {
+    "title": "System Design: Caching",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Caches store hot data close to the consumer to cut latency and backend load. Cache-aside (lazy loading): read checks cache, on miss load from DB and populate cache; write-through updates cache and DB together; write-back updates cache only and flushes later (faster, riskier). Eviction policies: LRU (least recently used), LFU, FIFO, TTL. Common pitfalls: cache stampede (many requests miss simultaneously — use locks or single-flight), stale data (TTL, invalidation events), and treating cache as the source of truth. In interviews, decide what to cache (hot reads, expensive queries, computed results), for how long, and how invalidation works."
+  },
+  {
+    "title": "System Design: Databases and Indexing",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Databases store data durably; the right choice depends on access patterns. Relational (PostgreSQL, MySQL) excel at joins, transactions (ACID), and structured schemas. NoSQL: document stores (MongoDB) for flexible schemas, key-value (Redis) for caches/sessions, wide-column (Cassandra) for write-heavy time series, search engines (Elasticsearch) for full-text. Indexes speed lookups at the cost of write throughput and storage; composite indexes matter for multi-column queries; covering indexes avoid table reads. Denormalization trades consistency for read speed. Read-heavy workloads get replicas; write-heavy workloads shard. Always discuss the query patterns before picking a store."
+  },
+  {
+    "title": "JavaScript: Closures and Scope",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "easy",
+    "content": "A closure is a function bundled with references to its lexical environment — it 'remembers' the variables in scope where it was defined, even after that scope exits. Closures enable data privacy (module pattern), partial application, and callbacks. Scope: var is function-scoped and hoisted (undefined until assigned); let/const are block-scoped with a temporal dead zone. Each function call creates a new scope chain; nested functions capture it. Classic pitfall: loop variables captured in closures (solved with let per-iteration binding or IIFEs). Interviewers probe whether you understand the difference between where a function is defined and where it is called."
+  },
+  {
+    "title": "JavaScript: Event Loop and Asynchrony",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "medium",
+    "content": "JavaScript is single-threaded; the event loop coordinates the call stack, microtask queue and macrotask queue. Synchronous code runs to completion on the stack; async work (timers, I/O, network) is delegated and its callbacks are queued. Microtasks (Promises, queueMicrotask, MutationObserver) drain before the next macrotask (setTimeout, setInterval, I/O). This is why Promise callbacks run before timer callbacks even when the timer fires first. Blocking the stack (long synchronous loops) freezes the UI. async/await is syntactic sugar over Promises; await yields to the loop. Know the execution order of mixed setTimeout/Promise code and why — it's a favorite interview question."
+  },
+  {
+    "title": "JavaScript: Prototypal Inheritance and this",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "medium",
+    "content": "JavaScript objects inherit via prototype chains: obj.foo resolves foo on obj, then on Object.getPrototypeOf(obj), and so on. Classes are syntax over constructor functions + prototype assignment. The value of this is determined by how a function is called: method call (obj.f()), plain call (undefined in strict mode), new, or explicit bind/call/apply. Arrow functions capture this lexically from enclosing scope and have no own this, arguments, or prototype. Common bugs: losing this when passing a method as a callback (fix with arrow function or bind), and expecting classes to behave like Java classes. Interviewers test the mental model, not memorized rules."
+  },
+  {
+    "title": "React: Hooks and State Management",
+    "role": "frontend-developer",
+    "topic": "react",
+    "difficulty": "medium",
+    "content": "Hooks let function components use state and lifecycle. useState holds local state; useReducer centralizes complex transitions; useEffect runs side effects after render (cleanup functions prevent leaks); useMemo/useCallback memoize values/functions; useRef holds mutable values that don't trigger re-renders. Rules of Hooks: call at top level, never in loops/conditions/nested functions — the order must be stable across renders. Derived state should be computed during render, not stored. Lifting state up shares data between siblings; context avoids prop drilling but causes re-renders of all consumers; external stores (Redux, Zustand, TanStack Query) manage server state. Stale closures are a classic bug when effects capture old values."
+  },
+  {
+    "title": "React: Rendering and Performance",
+    "role": "frontend-developer",
+    "topic": "react",
+    "difficulty": "medium",
+    "content": "React re-renders a component when its state changes or its parent re-renders. Reconciliation diffs the virtual DOM; keys help React match list items (use stable unique keys, not array indices when order changes). React.memo skips re-renders when props are referentially equal, which only helps with memoized callbacks. Profiling: identify unnecessary renders with React DevTools Profiler before optimizing. Code splitting (React.lazy) and virtualization (react-window) handle large lists. Controlled vs uncontrolled inputs, and batching of state updates in React 18+. Premature memoization is a smell — measure first."
+  },
+  {
+    "title": "Node.js: Event Loop and Streams",
+    "role": "backend-developer",
+    "topic": "nodejs",
+    "difficulty": "medium",
+    "content": "Node.js runs JavaScript on the V8 engine with a non-blocking I/O model powered by libuv's thread pool and the event loop. Phases: timers, pending callbacks, poll, check, close — microtasks run between phases. CPU-bound work blocks the loop; offload to worker threads or a job queue. Streams process data piece by piece (readable, writable, duplex, transform) enabling backpressure-aware handling of large files/network payloads without loading them into memory. The module system (CJS vs ESM), error handling patterns (always handle 'error' events, use domains/async hooks carefully), and middleware patterns in Express (request -> middleware chain -> handler -> response) are core interview topics."
+  },
+  {
+    "title": "Databases: Indexes and Query Optimization",
+    "role": "backend-developer",
+    "topic": "databases",
+    "difficulty": "medium",
+    "content": "Indexes are sorted structures (B-trees, hash indexes) that accelerate lookups by trading write cost and storage for read speed. A B-tree index on (a, b) supports queries filtering by a, and by a+b, but not by b alone — leading columns matter. Use EXPLAIN to inspect query plans: look for sequential scans on large tables, and prefer covering indexes. Avoid functions on indexed columns (breaks index usage), avoid leading-wildcard LIKE patterns, and beware of OR conditions that defeat index merge. Measure: index selectivity, cardinality, and the 90/10 read/write ratio. In MongoDB, single-field, compound and text indexes mirror these ideas."
+  },
+  {
+    "title": "SQL: Joins and Aggregation",
+    "role": "backend-developer",
+    "topic": "databases",
+    "difficulty": "easy",
+    "content": "JOINs combine rows from tables on a key. INNER JOIN returns matching rows only; LEFT JOIN keeps all left rows (nulls on the right); RIGHT and FULL follow symmetrically; CROSS JOIN produces a cartesian product. GROUP BY collapses rows and pairs with aggregate functions (COUNT, SUM, AVG, MIN, MAX); HAVING filters groups (WHERE filters rows before grouping). Window functions (ROW_NUMBER, RANK, LAG, LEAD, SUM OVER) compute across related rows without collapsing them. ORDER OF EXECUTION: FROM -> WHERE -> GROUP BY -> HAVING -> SELECT -> ORDER BY -> LIMIT. Interview staples: department top salary, second highest, running totals, and self-joins for hierarchical data."
+  },
+  {
+    "title": "DBMS: Transactions and ACID",
+    "role": "backend-developer",
+    "topic": "databases",
+    "difficulty": "medium",
+    "content": "A transaction groups operations that must succeed or fail together. ACID: Atomicity (all-or-nothing), Consistency (valid state to valid state), Isolation (concurrent transactions don't interfere), Durability (committed data survives crashes). Isolation levels (read uncommitted, read committed, repeatable read, serializable) trade safety for concurrency; anomalies include dirty reads, non-repeatable reads, and phantom reads. Concurrency control: pessimistic locking (SELECT ... FOR UPDATE) vs optimistic concurrency (version numbers). NoSQL databases relax ACID (BASE: basically available, soft state, eventually consistent) for scale. Know when you need a real transaction — most interview answers don't."
+  },
+  {
+    "title": "OOP: Polymorphism and Inheritance",
+    "role": "software-engineer",
+    "topic": "oop",
+    "difficulty": "easy",
+    "content": "Polymorphism lets one interface work with many types. Compile-time polymorphism is overloading; runtime polymorphism is overriding — a subclass provides its own implementation of a base method, and the correct one is dispatched dynamically. In languages like Java, this requires inheritance or interface implementation; in JS, prototype chains and duck typing provide similar flexibility. Inheritance (is-a) builds hierarchies and enables code reuse but creates tight coupling and fragile base classes; composition (has-a) favors delegation and is usually preferred (favor composition over inheritance). SOLID principles — Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion — guide clean OO design."
+  },
+  {
+    "title": "HTTP, REST and Web Security",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "medium",
+    "content": "HTTP is a request/response protocol; methods GET (read, idempotent), POST (create), PUT (replace), PATCH (partial update), DELETE. Status codes: 2xx success, 3xx redirect, 4xx client error, 5xx server error. REST designs resources as nouns with URLs, uses methods as verbs, and leverages statelessness and caching (ETags, Cache-Control). Security: authentication (who you are) vs authorization (what you can do); JWTs for stateless auth; CSRF protection for cookie-based auth; XSS prevention by escaping output; SQL injection prevention with parameterized queries; CORS for cross-origin policies; rate limiting and input validation as first lines of defense."
+  },
+  {
+    "title": "Time and Space Complexity Analysis",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "easy",
+    "content": "Big-O describes how runtime/space grow with input size, dropping constants and lower-order terms. Common classes: O(1) constant, O(log n) (binary search, balanced tree ops), O(n) linear, O(n log n) (good sorts), O(n^2) (nested loops over the input), O(2^n)/O(n!) (exponential/backtracking). Space complexity counts auxiliary memory (recursion depth, extra arrays, hash maps). To analyze: count loop iterations, note nested loops, account for recursion trees and memoization. When presenting a solution always state time and space complexity and justify them; the interviewer is checking you reason rigorously, not that you memorize."
+  },
+  {
+    "title": "Networking: TCP/IP and the Web Stack",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "medium",
+    "content": "The web runs on layered protocols. TCP provides reliable, ordered byte streams with handshakes, sequencing, retransmission and flow control; UDP is connectionless and lossy but fast (used by video, DNS, games). IP routes packets; DNS maps names to addresses (recursive and iterative resolution, caching, TTL). TLS encrypts HTTP into HTTPS via handshake (certificate, key exchange, symmetric session keys). HTTP/2 multiplexes streams over one connection; HTTP/3 uses QUIC over UDP. Key interview topics: what happens when you type a URL (DNS -> TCP/TLS -> HTTP request -> server -> response -> render), CDNs, and how WebSockets maintain a persistent bidirectional channel."
+  },
+  {
+    "title": "Machine Learning: Model Evaluation",
+    "role": "machine-learning-engineer",
+    "topic": "machine-learning",
+    "difficulty": "medium",
+    "content": "Evaluating models requires the right metrics for the task. Classification: accuracy (misleading on imbalanced data), precision (of predicted positives, how many are real), recall (of real positives, how many found), F1 (harmonic mean), ROC-AUC (threshold-independent ranking quality), confusion matrix. Regression: MSE (sensitive to outliers), MAE, R^2. Overfitting = model learns noise (high variance); underfitting = model too simple (high bias). Mitigations: more data, regularization (L1/L2), dropout, early stopping, cross-validation (k-fold), and simpler models. Always split train/validation/test — the test set must never influence training. For ranking/retrieval systems, precision@k and recall@k matter most."
+  },
+  {
+    "title": "Machine Learning: Feature Engineering",
+    "role": "machine-learning-engineer",
+    "topic": "machine-learning",
+    "difficulty": "medium",
+    "content": "Features are the model's input representation; good features often matter more than the algorithm. Categorical features: one-hot encoding (sparse, explodes dimensions), label encoding (implies ordering — wrong for nominal data), target encoding, embeddings for high-cardinality. Numerical features: scaling (standardization z-score, min-max) is required for distance-based models and neural nets; log transforms tame skew. Missing values: impute with mean/median/mode, or model-based imputation; missingness itself can be a signal. Text: TF-IDF, bag-of-words, or embeddings. Feature selection removes noise: correlation analysis, mutual information, or model-based importance. Leakage — using future information in features — is a classic silent killer."
+  },
+  {
+    "title": "Machine Learning: Overfitting, Bias and Regularization",
+    "role": "machine-learning-engineer",
+    "topic": "machine-learning",
+    "difficulty": "medium",
+    "content": "Bias is error from wrong assumptions (underfitting); variance is error from sensitivity to training data (overfitting). The bias-variance trade-off governs model complexity. Regularization penalizes complexity: L1 (lasso) drives weights to zero (feature selection), L2 (ridge) shrinks weights smoothly; both add the penalty to the loss. Dropout randomly disables neurons during training (neural nets); early stopping halts training when validation loss rises. Cross-validation estimates generalization. Symptoms of overfitting: great train scores, poor validation; memorize the test set by tuning on it repeatedly — hold out a final untouched test set for honest evaluation."
+  },
+  {
+    "title": "Data Analysis: Statistics Fundamentals",
+    "role": "data-analyst",
+    "topic": "data-analysis",
+    "difficulty": "easy",
+    "content": "Descriptive statistics summarize data: mean (sensitive to outliers), median (robust), mode, variance and standard deviation (spread), percentiles/quartiles and IQR (robust spread). Distributions: normal (bell curve, 68-95-99.7 rule), uniform, skewed. Inferential statistics generalizes from samples: confidence intervals quantify estimate uncertainty; hypothesis testing (null vs alternative, p-value, significance level) decides if an observed effect is real. Correlation (Pearson for linear, Spearman for monotonic) measures association — correlation is not causation. A/B testing compares variants with statistical significance and sufficient sample size. Always visualize first: histograms, box plots, scatter plots reveal shape, outliers and relationships."
+  },
+  {
+    "title": "Data Analysis: SQL for Analysts",
+    "role": "data-analyst",
+    "topic": "data-analysis",
+    "difficulty": "easy",
+    "content": "Analysts live in SQL. Core skills: SELECT with filtering (WHERE), sorting (ORDER BY), limiting (LIMIT), aggregations with GROUP BY and HAVING, joins across tables, and date functions (DATE_TRUNC, EXTRACT, DATEDIFF). Window functions compute running totals, rankings and moving averages without collapsing rows. CASE statements create derived categories; COALESCE handles nulls. Subqueries and CTEs (WITH) organize complex analysis into readable steps. Practical patterns: cohort analysis (group users by signup period, measure retention over time), funnel analysis (measure conversion across steps), and KPI dashboards (DAU/MAU, churn rate, ARPU). Data quality checks — null rates, duplicates, outliers — come before analysis."
+  },
+  {
+    "title": "System Design: Message Queues and Async Processing",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Message queues (Kafka, RabbitMQ, SQS) decouple producers from consumers: the producer publishes, the broker buffers, consumers process at their own pace. Benefits: burst absorption, fault isolation, retries, and parallel fan-out. Delivery semantics: at-most-once (may lose), at-least-once (may duplicate — make consumers idempotent), exactly-once (hard, usually via idempotency keys + transactions). Ordering: single-partition topics preserve order; multiple partitions only order within a partition. Use queues for emails, notifications, image processing, and any slow side effect in a request path. Interview guidance: identify the async boundary, choose the semantics, and design the retry/dead-letter story."
+  },
+  {
+    "title": "Full Stack: End-to-End Architecture",
+    "role": "full-stack-developer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Full-stack design spans client, API, and data. Frontend: framework (React), state management, routing, data fetching with caching (TanStack Query), and performance (bundling, code splitting, lazy loading). API layer: REST or GraphQL, authentication (JWT/cookies), validation, rate limiting, error handling with consistent response envelopes. Backend: service layer separating business logic from controllers, background jobs for slow work, and idempotent operations. Data: MongoDB/PostgreSQL modeling, indexes, and caching. Cross-cutting: security (CORS, CSP, input sanitization), observability (logs, metrics, tracing), and CI/CD. Interviewers want to see you connect the layers: a feature request traced from UI component through API to database and back."
+  },
+  {
+    "title": "Web Performance and Rendering",
+    "role": "frontend-developer",
+    "topic": "web",
+    "difficulty": "medium",
+    "content": "Web performance is measured by how fast content becomes usable: LCP (largest contentful paint), FID/INP (interaction), CLS (layout stability), and TTFB. Core techniques: reduce bundle size (code splitting, tree shaking), compress (gzip/brotli), cache (HTTP caching, CDN edge), lazy-load below-the-fold images, preconnect to origins, and minimize render-blocking resources. The critical rendering path: HTML -> CSSOM -> render tree -> layout -> paint. Avoid layout thrashing by batching DOM reads/writes; use transform/opacity for animations (compositor-friendly, no layout/paint); debounce scroll/resize handlers; and virtualize long lists. Measure with Lighthouse/WebPageTest before optimizing."
+  }
+]

@@ -1,0 +1,202 @@
+[
+  {
+    "title": "Explain polymorphism with a practical example",
+    "role": "software-engineer",
+    "topic": "oop",
+    "difficulty": "easy",
+    "content": "Polymorphism means one interface, many implementations. Runtime polymorphism: a subclass overrides a base-class method and the correct version is dispatched based on the object's actual type. Practical example: an interface Shape with method area(); Circle and Rectangle implement it; code holding Shape references calls area() and gets the right result. Compile-time polymorphism is method overloading. In JavaScript, dynamic dispatch happens naturally through the prototype chain, and duck typing is a form of structural polymorphism.",
+    "referenceSolution": "Define polymorphism (many forms), distinguish compile-time (overloading) vs runtime (overriding), give a Shape/Circle example, mention dynamic dispatch and how JS does it via prototypes/duck typing.",
+    "commonMistakes": "Confusing overloading with overriding; saying polymorphism is 'inheritance'; not knowing how JS achieves it; no concrete example.",
+    "rubric": "Definition (2), types of polymorphism (3), concrete example (3), JS-specific angle (2)."
+  },
+  {
+    "title": "How does a hash map work internally? What is a collision and how is it resolved?",
+    "role": "software-engineer",
+    "topic": "data-structures",
+    "difficulty": "medium",
+    "content": "A hash map stores key-value pairs in an array of buckets. A hash function maps a key to an index; ideally it is fast and distributes keys uniformly. Collisions (two keys hashing to the same bucket) are resolved by chaining (each bucket holds a linked list/tree) or open addressing (probe for the next free slot: linear, quadratic, or double hashing). Load factor = size/capacity; when it exceeds a threshold the map resizes (rehash), keeping average O(1) operations. In Java, HashMap uses chaining with trees for large buckets; in Python, dicts use open addressing.",
+    "referenceSolution": "Explain hash function -> index, buckets array, collision definition, chaining vs open addressing, load factor and resizing, amortized O(1).",
+    "commonMistakes": "Claiming O(1) is guaranteed (it is amortized/average); not knowing any collision resolution strategy; confusing hash maps with arrays.",
+    "rubric": "Hash function + bucket array (2), collision resolution detail (4), load factor/resizing (2), complexity claim (2)."
+  },
+  {
+    "title": "Explain the difference between process and thread",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "easy",
+    "content": "A process is an isolated execution environment with its own memory space, file descriptors, and resources; processes communicate via IPC (pipes, sockets, shared memory) and are expensive to create. A thread is a lightweight unit of execution within a process; threads share the process's memory and heap, so they communicate cheaply but must synchronize access to shared state (mutexes, condition variables, atomic operations). One process can crash without taking others down; one thread's bug (e.g., memory corruption) can crash the whole process. JavaScript's model is single-threaded per process (with worker threads for parallelism); Node uses a thread pool internally for I/O.",
+    "referenceSolution": "Define both, contrast memory isolation vs sharing, communication cost, synchronization need, crash isolation, connect to Node/JS threading model.",
+    "commonMistakes": "Saying threads have separate memory; not mentioning synchronization; claiming JS is multithreaded.",
+    "rubric": "Definitions (3), memory model contrast (3), synchronization (2), JS relevance (2)."
+  },
+  {
+    "title": "What is the event loop in JavaScript? Explain with setTimeout and Promise ordering",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "medium",
+    "content": "The event loop is the mechanism that lets single-threaded JS handle async work. It pulls tasks from the callback queue when the call stack empties. Microtasks (Promise callbacks, queueMicrotask) are drained to completion before the next macrotask (setTimeout, I/O). So: setTimeout(fn, 0) then a resolved Promise — the Promise callback runs first. Example: console.log('a'); setTimeout(() => console.log('b'), 0); Promise.resolve().then(() => console.log('c')); prints a, c, b. Why: the timer callback is a macrotask, the promise .then is a microtask; microtasks always beat the next macrotask.",
+    "referenceSolution": "Describe call stack + task queues, microtask vs macrotask priority, predict the a/c/b ordering, explain why.",
+    "commonMistakes": "Thinking setTimeout(0) runs immediately; wrong ordering predictions; not knowing microtasks drain before next macrotask.",
+    "rubric": "Event loop model (3), microtask/macrotask distinction (3), correct trace (2), explanation (2)."
+  },
+  {
+    "title": "What are closures in JavaScript? Give a real-world use case",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "easy",
+    "content": "A closure is a function that retains access to its lexical scope even after that scope has finished executing. Use cases: data privacy / module pattern (a counter whose state can't be mutated from outside), partial application / currying (multiply(a)(b)), memoization, and event handlers that need captured values. Example: function createCounter() { let count = 0; return () => ++count; } — each call keeps its own count. Memory consideration: closures keep referenced variables alive, so avoid accidentally capturing large objects in long-lived handlers.",
+    "referenceSolution": "Definition (closure = function + lexical environment), explain with counter/module example, mention memory implications, maybe loop-variable pitfall.",
+    "commonMistakes": "Defining closures only as 'functions inside functions'; no use case; not knowing the loop-var pitfall or memory retention.",
+    "rubric": "Definition (3), working example (3), use case (2), pitfalls (2)."
+  },
+  {
+    "title": "Explain React reconciliation and why keys matter",
+    "role": "frontend-developer",
+    "topic": "react",
+    "difficulty": "medium",
+    "content": "Reconciliation is how React diffs the previous virtual DOM against the new one to decide minimal DOM mutations. For element type changes React rebuilds; for same-type elements it updates props. For lists, keys let React match items across renders by identity instead of position — without stable keys, reordering or filtering causes components to be incorrectly reused (stale state, input loss). Keys should be stable, unique, and derived from data (ids), not array indices when the list can reorder. React.memo and useMemo reduce unnecessary re-render work; the diff itself is heuristic, not a perfect minimal-edit algorithm.",
+    "referenceSolution": "Explain VDOM diff, same-type update vs rebuild, key semantics (identity matching), index-key pitfalls, connection to performance.",
+    "commonMistakes": "Saying React re-renders the whole DOM; claiming index keys are always fine; not knowing what keys actually do.",
+    "rubric": "Reconciliation concept (3), key semantics (4), index-key pitfall (2), performance link (1)."
+  },
+  {
+    "title": "Design a URL shortener (like bit.ly)",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "Requirements: create a short code for a long URL, redirect short -> long, high read volume. Core: generate unique codes (base62 encoding of a counter, or random with collision retry; ~7 chars supports 62^7 combos), store mapping in a key-value store or DB with the short code as primary key, cache hot mappings in Redis (cache-aside), serve 301/302 redirects (301 is cached by browsers, 302 allows analytics). Scale: read-heavy — replicas + CDN/edge caching; writes are rare. Analytics and expiry (TTL) are optional extensions. Failure modes: cache stampede on miss, code collision, abuse (rate limiting, blocklists).",
+    "referenceSolution": "Clarify requirements, unique code generation (base62), storage + indexes, caching strategy, redirect semantics, scale read path, extensions.",
+    "commonMistakes": "Skipping requirement clarification; using the URL itself as key (long, not unique-safe); ignoring caching for read-heavy load; no collision handling.",
+    "rubric": "Requirements (2), code generation (3), storage/index (2), caching + scale (2), redirect semantics (1)."
+  },
+  {
+    "title": "What is the difference between SQL and NoSQL databases? When would you use each?",
+    "role": "backend-developer",
+    "topic": "databases",
+    "difficulty": "easy",
+    "content": "SQL databases (PostgreSQL, MySQL) have fixed schemas, enforce relationships with foreign keys, support joins and ACID transactions; ideal for relational, strongly consistent data (users, orders, payments). NoSQL: document (MongoDB) for flexible schemas and embedded data; key-value (Redis) for caches/sessions; wide-column (Cassandra) for high write throughput; search (Elasticsearch) for full-text. Choose SQL when data is relational and consistency matters; choose NoSQL when schema evolves, you need horizontal scale, or access patterns are document-shaped. Many systems are polyglot: SQL for source of truth, Redis for cache, Elasticsearch for search.",
+    "referenceSolution": "Contrast schema, relationships, transactions, scaling model; give selection criteria (consistency vs flexibility/scale); mention polyglot persistence.",
+    "commonMistakes": "Claiming NoSQL is 'faster' categorically; ignoring ACID/joins as differentiators; not matching DB choice to access patterns.",
+    "rubric": "SQL characteristics (2), NoSQL characteristics (2), selection criteria (4), polyglot nuance (2)."
+  },
+  {
+    "title": "Explain how you would find the second highest salary in SQL",
+    "role": "data-analyst",
+    "topic": "data-analysis",
+    "difficulty": "easy",
+    "content": "Approach 1: SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees) — handles duplicates implicitly for 'distinct salary values'. Approach 2: window function — SELECT salary FROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) rnk FROM employees) t WHERE rnk = 2 — DENSE_RANK handles ties correctly (no gaps). Approach 3: ORDER BY salary DESC LIMIT 1 OFFSET 1 — simple but wrong with duplicates unless DISTINCT is added. Best practice: use DENSE_RANK (or DISTINCT + OFFSET) and clarify with the interviewer how ties should be counted.",
+    "referenceSolution": "Give at least two correct approaches, handle ties (DENSE_RANK vs RANK), mention DISTINCT, explain trade-offs.",
+    "commonMistakes": "LIMIT 1 OFFSET 1 without DISTINCT (breaks with duplicate top salaries); RANK leaving gaps; not handling NULLs.",
+    "rubric": "Correct query (3), tie handling (3), alternative approaches (2), explanation (2)."
+  },
+  {
+    "title": "How does indexing speed up database queries? What are the trade-offs?",
+    "role": "backend-developer",
+    "topic": "databases",
+    "difficulty": "medium",
+    "content": "An index is a sorted structure (usually a B-tree) mapping key values to row locations, turning full table scans (O(n)) into logarithmic lookups (O(log n)). Queries filtering, joining, or ordering by indexed columns skip most rows. Trade-offs: indexes consume storage; every INSERT/UPDATE/DELETE must maintain them, slowing writes; the planner may still ignore an index if selectivity is low (e.g., a boolean column). Composite indexes follow leftmost-prefix rules. Covering indexes include all needed columns, avoiding table lookups. Use EXPLAIN to verify the plan. Don't over-index: measure query patterns first.",
+    "referenceSolution": "B-tree mechanics, scan vs lookup complexity, write/storage cost, selectivity, leftmost prefix, covering indexes, EXPLAIN.",
+    "commonMistakes": "Claiming indexes make writes faster; not knowing leftmost-prefix; ignoring selectivity/planner behavior.",
+    "rubric": "Mechanism (3), read speedup (2), write/storage trade-offs (3), advanced points (2)."
+  },
+  {
+    "title": "Explain REST API design best practices",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "easy",
+    "content": "REST models resources as nouns (/users, /users/:id/orders) and uses HTTP methods as verbs: GET (read, idempotent), POST (create), PUT (replace), PATCH (partial update), DELETE. Use plural nouns, nested resources for relationships, proper status codes (200, 201, 204, 400, 401, 403, 404, 409, 500), pagination (limit/offset or cursor), filtering/sorting via query params, versioning (/v1), consistent error envelopes, and idempotency keys for risky writes. Statelessness: each request carries what it needs (auth token). Document with OpenAPI; validate input; rate limit; return the right content type.",
+    "referenceSolution": "Resource naming, method semantics, status codes, pagination/versioning, error envelope, idempotency, security (auth, validation, rate limiting).",
+    "commonMistakes": "Verbs in URLs (/getUsers); ignoring status code semantics; no pagination; inconsistent error shapes.",
+    "rubric": "Resource/method model (3), status codes (2), API hygiene (3), security (2)."
+  },
+  {
+    "title": "What is the difference between process-based and thread-based concurrency? When is Node.js single-threaded?",
+    "role": "backend-developer",
+    "topic": "nodejs",
+    "difficulty": "medium",
+    "content": "Process-based concurrency isolates memory and crashes, communicates via IPC, scales across cores by running multiple processes. Thread-based concurrency shares memory within a process, needs locks, and is cheaper to spawn. Node.js runs user JS on a single thread (the event loop) — that's why you never need locks for your own code; async I/O is delegated to libuv's thread pool (default 4 threads) and the OS, then callbacks return to the loop. CPU-bound work blocks the loop — use worker_threads, child processes, or offload to a service. Cluster mode forks processes per core. Understanding where the single thread is (user code) vs isn't (I/O) is the core mental model.",
+    "referenceSolution": "Contrast process/thread models, explain Node single-threaded event loop, libuv pool for I/O, when to use worker_threads/cluster.",
+    "commonMistakes": "Claiming Node is fully single-threaded including I/O; missing the thread pool; not knowing CPU-bound blocks the loop.",
+    "rubric": "Process vs thread (3), Node model (4), scaling answers (3)."
+  },
+  {
+    "title": "Explain overfitting and how to prevent it",
+    "role": "machine-learning-engineer",
+    "topic": "machine-learning",
+    "difficulty": "easy",
+    "content": "Overfitting is when a model learns noise instead of signal: it performs well on training data but poorly on unseen data. Symptoms: large train/validation gap. Causes: too little data, too complex a model, training too long. Prevention: more data (or data augmentation), simpler models, regularization (L1/L2, dropout), early stopping on validation loss, cross-validation to tune, feature selection to remove noise, and ensemble methods (bagging reduces variance). Always hold out a final test set untouched by tuning to estimate true generalization.",
+    "referenceSolution": "Define overfitting, identify symptoms (train/val gap), list causes, give multiple prevention techniques, mention validation discipline.",
+    "commonMistakes": "Confusing overfitting with underfitting; only mentioning 'more data'; not mentioning validation/test discipline.",
+    "rubric": "Definition (2), symptom identification (2), prevention techniques (4), validation practice (2)."
+  },
+  {
+    "title": "How do you choose between precision and recall? Explain with an example",
+    "role": "machine-learning-engineer",
+    "topic": "machine-learning",
+    "difficulty": "easy",
+    "content": "Precision = true positives / predicted positives (of what we flagged, how much is correct). Recall = true positives / actual positives (of what was there, how much we found). They trade off via the decision threshold. Choose precision when false positives are costly: spam detection (annoying if real mail is blocked), fraud alerts that cause manual review. Choose recall when false negatives are costly: cancer screening (missing a case is worse than a follow-up), intrusion detection. F1 balances both; the right choice depends on the business cost of each error type.",
+    "referenceSolution": "Define both with formulas, explain the trade-off and threshold, give cost-driven examples for each, mention F1.",
+    "commonMistakes": "Swapping the definitions; ignoring the cost framing; no concrete example.",
+    "rubric": "Definitions (3), trade-off (3), example framing (3), F1 mention (1)."
+  },
+  {
+    "title": "What is the difference between inner join, left join, and full outer join?",
+    "role": "data-analyst",
+    "topic": "data-analysis",
+    "difficulty": "easy",
+    "content": "INNER JOIN returns rows where the join key matches in both tables — unmatched rows disappear. LEFT JOIN returns every row from the left table, with NULLs on the right when no match exists. FULL OUTER JOIN returns all rows from both tables, NULLs where either side lacks a match. RIGHT JOIN is the mirror of LEFT. Example: employees LEFT JOIN departments keeps employees without a department (NULL department); INNER would drop them; FULL keeps both orphaned employees and empty departments. Choose based on which table's rows must survive the join.",
+    "referenceSolution": "Define all join types, explain NULL behavior, give a concrete table example, note RIGHT = mirror of LEFT.",
+    "commonMistakes": "Confusing LEFT/FULL NULL behavior; not knowing which rows survive; no example.",
+    "rubric": "INNER (2), LEFT (3), FULL (3), example/clarity (2)."
+  },
+  {
+    "title": "Explain the CAP theorem",
+    "role": "software-engineer",
+    "topic": "system-design",
+    "difficulty": "medium",
+    "content": "CAP says a distributed system can guarantee at most two of: Consistency (every read returns the latest write), Availability (every request gets a response, even if stale), Partition tolerance (system continues during network failures). Since network partitions are unavoidable in practice, systems choose between CP and AP during a partition: CP systems (e.g., most relational with quorum) reject writes to preserve consistency; AP systems (e.g., Dynamo-style, Cassandra) accept writes and reconcile later (eventual consistency). PACELC extends it: else (no partition), choose latency vs consistency. Interviewers want the trade-off reasoning, not just the acronym.",
+    "referenceSolution": "Define C/A/P precisely, argue partitions are unavoidable, explain CP vs AP choice with real systems, mention PACELC as nuance.",
+    "commonMistakes": "Claiming all three are achievable; fuzzy definitions (consistency != availability); no system examples.",
+    "rubric": "Definitions (3), partition framing (2), CP/AP examples (3), nuance (2)."
+  },
+  {
+    "title": "Explain how React's useCallback and useMemo differ and when to use them",
+    "role": "frontend-developer",
+    "topic": "react",
+    "difficulty": "medium",
+    "content": "useMemo memoizes a computed value (the result of a function); useCallback memoizes the function itself (so its identity is stable across renders). Both only help when combined with React.memo or effect dependencies: a stable callback identity prevents child re-renders and prevents useEffect from re-running. They have a cost (memory + comparison of deps), so overuse is an anti-pattern. Rules: use useMemo for expensive calculations (not trivial arithmetic — the memo itself costs more); use useCallback when passing callbacks to memoized children or into effect deps. Prefer derived state during render and let the profiler guide memoization.",
+    "referenceSolution": "Define both, explain identity/reference semantics, when they help (React.memo, deps), when they don't, and the overuse caveat.",
+    "commonMistakes": "Using useMemo for cheap values; using useCallback without memoized children; claiming they speed up the function itself.",
+    "rubric": "Distinction (3), correct usage triggers (3), overuse caveat (2), example (2)."
+  },
+  {
+    "title": "How would you design a chat application (1-on-1) at scale?",
+    "role": "full-stack-developer",
+    "topic": "system-design",
+    "difficulty": "hard",
+    "content": "Requirements: 1-on-1 messaging with delivery/read receipts, presence, history. Components: WebSocket gateway (or long-polling fallback) for real-time push; message service persisting to a DB (messages table indexed by (conversation_id, created_at)); conversation service managing participants; presence service (Redis pub/sub or heartbeat); notifications via push/email. Delivery: at-least-once with client dedup by message id; read receipts via read-cursor per conversation. Scaling: shard messages by conversation, scale gateways horizontally, use Redis for presence and fan-out. Failure handling: offline queue, retry with backoff, exactly-once via idempotency keys. This maps to existing platforms like Stream Chat.",
+    "referenceSolution": "Clarify scope, real-time transport, message storage/indexing, presence, delivery semantics + dedup, read receipts, scaling story, failure handling.",
+    "commonMistakes": "Forgetting offline delivery; no dedup/idempotency; ignoring presence; monolithic single-server assumptions.",
+    "rubric": "Real-time layer (2), persistence (2), delivery semantics (3), scale (2), failure handling (1)."
+  },
+  {
+    "title": "Explain the difference between == and === in JavaScript",
+    "role": "frontend-developer",
+    "topic": "javascript",
+    "difficulty": "easy",
+    "content": "=== (strict equality) compares value AND type without coercion: 1 === '1' is false. == (loose equality) coerces operands: 1 == '1' is true; null == undefined is true; '' == 0 is true. Loose equality's coercion rules are surprising and a common source of bugs, so modern style (ESLint eqeqeq) bans ==. Objects compare by reference with both operators: {} == {} is false. Practical advice: always use === except when intentionally checking null/undefined (x == null matches both).",
+    "referenceSolution": "Define both, show coercion examples (string-number, null-undefined), note object reference comparison, recommend ===.",
+    "commonMistakes": "Not knowing null == undefined; claiming == compares values only; missing reference semantics for objects.",
+    "rubric": "Definitions (3), coercion examples (4), reference semantics (2), recommendation (1)."
+  },
+  {
+    "title": "Walk me through what happens when you type a URL and press Enter",
+    "role": "software-engineer",
+    "topic": "cs-fundamentals",
+    "difficulty": "easy",
+    "content": "1) Browser checks cache (HTTP cache, DNS cache). 2) DNS resolution: recursive resolver -> root/TLD/authoritative servers -> IP (may be served by CDN). 3) TCP handshake (SYN, SYN-ACK, ACK); with HTTPS, TLS handshake (certificate verification, key exchange). 4) HTTP request assembled (headers, cookies) and sent. 5) Server processes, queries DB/cache, returns response with status + headers. 6) Browser parses HTML -> builds DOM, fetches CSS/JS, executes, renders (critical rendering path), fires load event. 7) Connection reuse (keep-alive) for subsequent requests. Knowing where latency hides (DNS, TLS, TTFB, render) is what interviewers probe.",
+    "referenceSolution": "Step through DNS -> TCP -> TLS -> HTTP request -> server -> render, mention caching at each layer and the critical rendering path.",
+    "commonMistakes": "Skipping DNS/TLS; treating the server as a black box; missing browser rendering steps.",
+    "rubric": "DNS (2), TCP/TLS (2), request/response (3), rendering (3)."
+  }
+]
