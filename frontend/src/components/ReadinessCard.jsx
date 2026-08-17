@@ -106,43 +106,47 @@ function ReadinessCard({ data, isLoading }) {
           </div>
         </div>
 
-        {/* STRONG / IMPROVE */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-base-200 rounded-xl p-4">
+        {/* STRONG / IMPROVE — plain text rows, no boxes or chips, so long
+            phrases like "System design fundamentals (scalability, reliability,
+            trade-offs)" can never clip or overlap */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 border-t border-base-300 pt-4 mt-6">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2Icon className="size-4 text-success shrink-0" />
-              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
+              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/70">
                 Strong Areas
               </h3>
             </div>
             {data?.strongAreas?.length ? (
-              <div className="flex flex-wrap gap-2">
+              <ul className="space-y-1.5">
                 {data.strongAreas.map((area) => (
-                  <span key={area} className="badge badge-success badge-outline">
+                  <li key={area} className="text-sm leading-relaxed text-base-content/80">
                     {area}
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <p className="text-sm text-base-content/50">Complete an interview to see strengths</p>
+              <p className="text-sm text-base-content/50">
+                Complete an interview to see strengths
+              </p>
             )}
           </div>
 
-          <div className="bg-base-200 rounded-xl p-4">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <TriangleAlertIcon className="size-4 text-warning shrink-0" />
-              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
+              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/70">
                 Improve Next
               </h3>
             </div>
             {data?.weakAreas?.length ? (
-              <div className="flex flex-wrap gap-2">
+              <ul className="space-y-1.5">
                 {data.weakAreas.map((area) => (
-                  <span key={area} className="badge badge-warning badge-outline">
+                  <li key={area} className="text-sm leading-relaxed text-base-content/80">
                     {area}
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
               <p className="text-sm text-base-content/50">No weak areas detected yet</p>
             )}
