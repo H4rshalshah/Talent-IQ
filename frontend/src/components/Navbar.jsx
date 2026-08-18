@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
   BookOpenIcon,
@@ -17,11 +17,44 @@ const THEME_KEY = "talentiq-theme";
 function Navbar() {
   const location = useLocation();
   const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === "gfg-dark");
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "gfg-dark" : "gfg";
     localStorage.setItem(THEME_KEY, dark ? "gfg-dark" : "gfg");
   }, [dark]);
+
+  // Hide navbar on scroll down, show on scroll up
+  const handleScroll = useCallback(() => {
+    if (ticking.current) return;
+    ticking.current = true;
+
+    requestAnimationFrame(() => {
+      const scrollY = window.scrollY;
+      const delta = scrollY - lastScrollY.current;
+
+      // Always show at the top
+      if (scrollY < 60) {
+        setHidden(false);
+      } else if (delta > 10) {
+        // Scrolling down → hide
+        setHidden(true);
+      } else if (delta < -10) {
+        // Scrolling up → show
+        setHidden(false);
+      }
+
+      lastScrollY.current = scrollY;
+      ticking.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const isActive = (path) => location.pathname === path;
 
@@ -34,7 +67,12 @@ function Navbar() {
   ];
 
   return (
-    <nav className="bg-base-100/80 backdrop-blur-md border-b border-primary/20 sticky top-0 z-50 shadow-lg">
+    <>
+    <nav
+      className={`fixed top-0 left-0 right-0 bg-base-100/80 backdrop-blur-md border-b border-primary/20 z-50 shadow-lg transition-transform duration-300 ease-in-out ${
+        hidden ? "-translate-y-full" : "translate-y-0"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* LOGO */}
         <Link
@@ -106,6 +144,9 @@ function Navbar() {
         </div>
       </div>
     </nav>
+    {/* Spacer to offset the fixed navbar height */}
+    <div className="h-16" />
+    </>
   );
 }
 export default Navbar;

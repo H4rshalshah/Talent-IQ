@@ -26,6 +26,42 @@ import { roleLabel, topicLabel } from "../data/interviewConfig";
 import { gsap, prefersReducedMotion } from "../lib/animations/gsap.setup";
 import { formatDistanceToNow } from "date-fns";
 
+/* ─── Typewriter hook ─────────────────────────────────────────────────── */
+function useTypewriter(text, { speed = 18, enabled = true } = {}) {
+  const [displayed, setDisplayed] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    if (!enabled || !text) {
+      setDisplayed(text || "");
+      setIsComplete(true);
+      return;
+    }
+
+    // Reset
+    setDisplayed("");
+    setIsComplete(false);
+    indexRef.current = 0;
+
+    const id = setInterval(() => {
+      indexRef.current += 1;
+      if (indexRef.current >= text.length) {
+        setDisplayed(text);
+        setIsComplete(true);
+        clearInterval(id);
+      } else {
+        setDisplayed(text.slice(0, indexRef.current));
+      }
+    }, speed);
+
+    return () => clearInterval(id);
+  }, [text, speed, enabled]);
+
+  return { displayed, isComplete };
+}
+
+/* ─── Main Component ─────────────────────────────────────────────────── */
 function AIInterviewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,6 +85,12 @@ function AIInterviewPage() {
   const interview = data?.data?.interview;
   const questions = data?.data?.questions || [];
   const answeredCount = questions.filter((q) => q.answer).length;
+
+  /* ─── Typewriter for question text ─── */
+  const { displayed: typedQuestion, isComplete: typewriterDone } = useTypewriter(
+    currentQuestion?.question,
+    { speed: 14, enabled: !isGenerating && !!currentQuestion }
+  );
 
   // redirect completed interviews to the result page
   useEffect(() => {
@@ -81,7 +123,6 @@ function AIInterviewPage() {
         const next = prev - 1;
         if (next <= 0) {
           clearInterval(interval);
-          // defer outside the state updater to avoid side effects in render phase
           setTimeout(handleTimeUp, 0);
           return 0;
         }
@@ -90,7 +131,6 @@ function AIInterviewPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interview?._id, interview?.status]);
 
   // initial question generation / resume
@@ -103,7 +143,6 @@ function AIInterviewPage() {
       return;
     }
     if (last && last.answer) {
-      // resume: fetch the next question
       setIsGenerating(true);
       getQuestionMutation.mutate(
         { interviewId: id },
@@ -113,7 +152,6 @@ function AIInterviewPage() {
         }
       );
     }
-    // no questions yet — generate the first one
     if (!last) {
       setIsGenerating(true);
       getQuestionMutation.mutate(
@@ -124,10 +162,9 @@ function AIInterviewPage() {
         }
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, interview?._id, questions.length]);
 
-  // GSAP question transition: quick crossfade/slide on new question (200-300ms)
+  // GSAP question transition
   useEffect(() => {
     const questionId = currentQuestion?._id;
     if (!questionId || prefersReducedMotion()) return;
@@ -160,7 +197,6 @@ function AIInterviewPage() {
           setFeedback(response?.data?.feedback || null);
           setCurrentQuestion(response?.data?.nextQuestion || null);
           setAnswerText("");
-          // refresh the question list so progress/answered counts stay accurate
           queryClient.invalidateQueries({ queryKey: ["interview", id] });
         },
       }
@@ -221,9 +257,10 @@ function AIInterviewPage() {
     <div className="min-h-screen bg-base-200 flex flex-col">
       <Navbar />
 
-      {/* TOP BAR */}
-      <div className="bg-base-100 border-b border-base-300 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+      {/* ─── TOP BAR ─── */}
+      <div className="bg-base-100 border-b border-base-300">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          {/* Left: title + badges inline */}
           <div className="flex items-center gap-3">
             <div className="icon-tint size-10">
               <BotIcon className="size-5" />
@@ -232,14 +269,20 @@ function AIInterviewPage() {
               <p className="font-bold leading-tight">
                 AI Interview · {roleLabel(interview.role)}
               </p>
-              <p className="text-xs text-base-content/60">
-                RAG-grounded · Adaptive difficulty
-              </p>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-xs text-base-content/60">RAG-grounded</span>
+                <span className="badge badge-primary badge-xs">Adaptive Difficulty</span>
+                {interview.performanceScore != null && (
+                  <span className="badge badge-secondary badge-xs">
+                    Score {interview.performanceScore.toFixed(1)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
+          {/* Right: progress + timer + finish */}
           <div className="flex items-center gap-4">
-            {/* PROGRESS */}
             <div className="hidden sm:block w-40">
               <div className="flex justify-between text-xs text-base-content/60 mb-1">
                 <span>{answeredCount} answered</span>
@@ -248,7 +291,6 @@ function AIInterviewPage() {
               <progress className="progress progress-primary w-full" value={progressPct} max="100" />
             </div>
 
-            {/* TIMER */}
             <div
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold ${
                 timerLow ? "bg-error/10 text-error" : "bg-base-200 text-base-content"
@@ -266,48 +308,69 @@ function AIInterviewPage() {
         </div>
       </div>
 
-      {/* MAIN 3-COLUMN (stacks vertically on mobile) */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr_300px] gap-6">
-        {/* LEFT: interviewer + progress */}
-        <div className="space-y-6">
-          <div className="card bg-base-100 shadow">
-            <div className="card-body">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="relative">
-                  <div className="icon-tint size-12 rounded-full">
-                    <BotIcon className="size-6" />
+      {/* ─── MAIN 3-COLUMN GRID ─── */}
+      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr_300px] gap-6">
+        {/* ─── LEFT: interviewer + progress ─── */}
+        <div className="flex flex-col gap-6">
+          {/* Question Card */}
+          <div
+            className={`card bg-base-100 shadow overflow-hidden transition-all duration-300 ${
+              isGenerating ? "ai-glow-border border border-primary/30" : "border border-base-300"
+            }`}
+          >
+            <div className="card-body p-6 gap-4">
+              {/* Header row: avatar + info + generating badge */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="icon-tint size-12 rounded-full">
+                      <BotIcon className="size-6" />
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 size-3.5 bg-success rounded-full border-2 border-base-100" />
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 size-3.5 bg-success rounded-full border-2 border-base-100" />
+                  <div>
+                    <p className="font-bold">AI Interviewer</p>
+                    <p className="text-xs text-base-content/60">
+                      {roleLabel(interview.role)} · {interview.config?.experienceLevel} level
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold">AI Interviewer</p>
-                  <p className="text-xs text-base-content/60">
-                    {roleLabel(interview.role)} · {interview.config?.experienceLevel} level
-                  </p>
-                </div>
+
+                {/* Pulsing AI badge when generating */}
+                {isGenerating && (
+                  <span className="ai-generating-badge badge badge-primary gap-1.5 py-1.5 px-3">
+                    <SparklesIcon className="size-3.5 animate-spin" />
+                    AI Generating…
+                  </span>
+                )}
               </div>
 
-              {/* QUESTION */}
-              <div ref={questionRef}>
+              {/* Question area */}
+              <div ref={questionRef} className="space-y-3">
                 {isGenerating ? (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-primary">
-                      <LoaderIcon className="size-5 animate-spin" />
-                      <span className="font-medium">
-                        Retrieving reference material and generating your question...
-                      </span>
-                    </div>
-                    <div className="skeleton h-6 w-3/4"></div>
-                    <div className="skeleton h-6 w-1/2"></div>
+                    <div className="skeleton h-6 w-3/4 rounded-lg"></div>
+                    <div className="skeleton h-6 w-1/2 rounded-lg"></div>
+                    <div className="skeleton h-4 w-2/3 rounded-lg"></div>
                   </div>
                 ) : currentQuestion ? (
-                  <>
-                    <span className="badge badge-primary badge-sm mb-3">
-                      {currentQuestion.isFollowUp ? "Follow-up" : "New question"} ·{" "}
-                      {topicLabel(currentQuestion.topic || currentQuestion.category)}
-                    </span>
-                    <p className="text-2xl font-bold leading-snug">{currentQuestion.question}</p>
-                  </>
+                  <div className="ai-question-fade">
+                    {/* Badges: topic + type — inside flex row, won't break layout */}
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="badge badge-primary badge-sm">
+                        {currentQuestion.isFollowUp ? "Follow-up" : "New question"}
+                      </span>
+                      <span className="badge badge-outline badge-sm">
+                        {topicLabel(currentQuestion.topic || currentQuestion.category)}
+                      </span>
+                    </div>
+
+                    {/* Typewriter text with blinking cursor */}
+                    <p className="text-xl sm:text-2xl font-bold leading-snug">
+                      {typedQuestion}
+                      {!typewriterDone && <span className="ai-cursor" />}
+                    </p>
+                  </div>
                 ) : getQuestionMutation.isError ? (
                   <div className="card bg-error/5 border border-error/20 p-4">
                     <p className="text-sm text-base-content/80 mb-3">
@@ -321,7 +384,8 @@ function AIInterviewPage() {
                         getQuestionMutation.mutate(
                           { interviewId: id },
                           {
-                            onSuccess: (response) => setCurrentQuestion(response?.data?.question),
+                            onSuccess: (response) =>
+                              setCurrentQuestion(response?.data?.question),
                             onSettled: () => setIsGenerating(false),
                           }
                         );
@@ -333,16 +397,16 @@ function AIInterviewPage() {
                     </button>
                   </div>
                 ) : (
-                  <p className="text-base-content/60">Preparing your interview...</p>
+                  <p className="text-base-content/60">Preparing your interview…</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* PROGRESS */}
-          <div className="card bg-base-100 shadow">
-            <div className="card-body py-4">
-              <div className="flex justify-between text-sm mb-2">
+          {/* Progress Card */}
+          <div className="card bg-base-100 shadow border border-base-300">
+            <div className="card-body p-6 gap-3">
+              <div className="flex justify-between text-sm">
                 <span className="font-semibold">Interview progress</span>
                 <span className="text-base-content/60">
                   {answeredCount} / {interview.config?.numQuestions || 10}
@@ -353,12 +417,16 @@ function AIInterviewPage() {
                 value={progressPct}
                 max="100"
               />
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-1">
                 {questions.map((q, idx) => (
                   <span
                     key={q._id}
                     className={`size-2.5 rounded-full ${
-                      q.answer ? "bg-success" : idx === questions.length - 1 ? "bg-primary animate-pulse" : "bg-base-300"
+                      q.answer
+                        ? "bg-success"
+                        : idx === questions.length - 1
+                          ? "bg-primary animate-pulse"
+                          : "bg-base-300"
                     }`}
                     title={`Q${idx + 1}: ${q.answer ? "answered" : "pending"}`}
                   />
@@ -368,10 +436,10 @@ function AIInterviewPage() {
           </div>
         </div>
 
-        {/* CENTER: answer input */}
-        <div className="card bg-base-100 shadow flex flex-col">
-          <div className="card-body flex-1 flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
+        {/* ─── CENTER: answer input ─── */}
+        <div className="card bg-base-100 shadow border border-base-300 flex flex-col overflow-hidden">
+          <div className="card-body p-6 flex-1 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
               <MessageSquareTextIcon className="size-5 text-primary" />
               <h2 className="font-bold text-lg">Your Answer</h2>
             </div>
@@ -387,9 +455,9 @@ function AIInterviewPage() {
               disabled={isGenerating || !currentQuestion}
             />
 
-            {/* FEEDBACK */}
+            {/* Feedback */}
             {feedback && (
-              <div className="mt-4 alert bg-base-200 border-base-300">
+              <div className="alert bg-base-200 border border-base-300">
                 <div className="flex items-start gap-3">
                   {feedback.correctness === "strong" ? (
                     <CheckCircle2Icon className="size-5 text-success shrink-0 mt-0.5" />
@@ -420,12 +488,12 @@ function AIInterviewPage() {
                 isGenerating ||
                 submitAnswerMutation.isPending
               }
-              className="btn btn-primary btn-lg mt-4 w-full gap-2"
+              className="btn btn-primary btn-lg w-full gap-2"
             >
               {submitAnswerMutation.isPending ? (
                 <>
                   <LoaderIcon className="size-5 animate-spin" />
-                  Evaluating with retrieved reference material...
+                  Evaluating with retrieved reference material…
                 </>
               ) : (
                 <>
@@ -438,48 +506,65 @@ function AIInterviewPage() {
           </div>
         </div>
 
-        {/* RIGHT: topic/difficulty/status */}
-        <div className="space-y-6">
-          <div className="card bg-base-100 shadow">
-            <div className="card-body py-5">
-              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60 mb-3">
+        {/* ─── RIGHT: topic/difficulty/status ─── */}
+        <div className="flex flex-col gap-6">
+          {/* Current Focus Card */}
+          <div className="card bg-base-100 shadow border border-base-300">
+            <div className="card-body p-6 gap-4">
+              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
                 Current Focus
               </h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-base-content/60 text-sm">Topic</span>
-                  <span className="badge badge-outline">
-                    {topicLabel(currentQuestion?.topic || interview.currentTopic || "—")}
+                  <span className="badge badge-outline text-xs">
+                    {topicLabel(
+                      currentQuestion?.topic || interview.currentTopic || "—"
+                    )}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-base-content/60 text-sm">Difficulty</span>
                   <span
-                    className={`badge ${
+                    className={`badge text-xs ${
                       (currentQuestion?.difficulty || interview.currentDifficulty) === "easy"
                         ? "badge-success"
-                        : (currentQuestion?.difficulty || interview.currentDifficulty) === "hard"
+                        : (currentQuestion?.difficulty || interview.currentDifficulty) ===
+                            "hard"
                           ? "badge-error"
                           : "badge-warning"
                     }`}
                   >
-                    {(currentQuestion?.difficulty || interview.currentDifficulty || "medium").slice(0, 1).toUpperCase() +
-                      (currentQuestion?.difficulty || interview.currentDifficulty || "medium").slice(1)}
+                    {(
+                      currentQuestion?.difficulty ||
+                      interview.currentDifficulty ||
+                      "medium"
+                    )
+                      .slice(0, 1)
+                      .toUpperCase() +
+                      (
+                        currentQuestion?.difficulty ||
+                        interview.currentDifficulty ||
+                        "medium"
+                      ).slice(1)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-base-content/60 text-sm">Adaptive score</span>
-                  <span className="font-mono font-bold">
-                    {interview.performanceScore != null ? `${interview.performanceScore.toFixed(1)}/10` : "—"}
+                  <span className="font-mono font-bold text-sm">
+                    {interview.performanceScore != null
+                      ? `${interview.performanceScore.toFixed(1)}/10`
+                      : "—"}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="card bg-base-100 shadow">
-            <div className="card-body py-5">
-              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60 mb-3">
+          {/* Tracking Card */}
+          <div className="card bg-base-100 shadow border border-base-300">
+            <div className="card-body p-6 gap-3">
+              <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60">
                 Tracking
               </h3>
               <div className="space-y-2 text-sm">
@@ -489,21 +574,29 @@ function AIInterviewPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-base-content/60">Follow-ups</span>
-                  <span className="font-semibold">{questions.filter((q) => q.isFollowUp).length}</span>
+                  <span className="font-semibold">
+                    {questions.filter((q) => q.isFollowUp).length}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-base-content/60">Strong areas</span>
-                  <span className="font-semibold">{interview.strongAreas?.length || 0}</span>
+                  <span className="font-semibold">
+                    {interview.strongAreas?.length || 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-base-content/60">Weak areas</span>
-                  <span className="font-semibold">{interview.weakAreas?.length || 0}</span>
+                  <span className="font-semibold">
+                    {interview.weakAreas?.length || 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-base-content/60">Started</span>
                   <span className="font-semibold">
                     {interview.startedAt
-                      ? formatDistanceToNow(new Date(interview.startedAt), { addSuffix: true })
+                      ? formatDistanceToNow(new Date(interview.startedAt), {
+                          addSuffix: true,
+                        })
                       : "—"}
                   </span>
                 </div>
@@ -511,24 +604,25 @@ function AIInterviewPage() {
             </div>
           </div>
 
+          {/* Info tip */}
           <div className="alert alert-info text-sm">
             <SparklesIcon className="size-4 shrink-0" />
             <span>
-              Each question is grounded in retrieved reference material. No scores are shown
-              mid-interview so you can answer naturally.
+              Each question is grounded in retrieved reference material. No scores are
+              shown mid-interview so you can answer naturally.
             </span>
           </div>
         </div>
       </div>
 
-      {/* CONFIRM END MODAL */}
+      {/* ─── CONFIRM END MODAL ─── */}
       {showConfirmEnd && (
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-2xl mb-2">Finish this interview?</h3>
             <p className="text-base-content/70 mb-6">
-              Your answers will be evaluated and a performance report will be generated. This
-              cannot be undone.
+              Your answers will be evaluated and a performance report will be generated.
+              This cannot be undone.
             </p>
             <div className="modal-action">
               <button className="btn btn-ghost" onClick={() => setShowConfirmEnd(false)}>
@@ -548,7 +642,10 @@ function AIInterviewPage() {
               </button>
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setShowConfirmEnd(false)}></div>
+          <div
+            className="modal-backdrop"
+            onClick={() => setShowConfirmEnd(false)}
+          ></div>
         </div>
       )}
 
@@ -556,7 +653,7 @@ function AIInterviewPage() {
       {abortMutation.isPending && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-xl">Ending interview...</h3>
+            <h3 className="font-bold text-xl">Ending interview…</h3>
           </div>
         </div>
       )}

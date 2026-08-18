@@ -1,6 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import { Navigate, Route, Routes } from "react-router";
 import HomePage from "./pages/HomePage";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import { Toaster } from "react-hot-toast";
 import DashboardPage from "./pages/DashboardPage";
@@ -25,6 +26,7 @@ function App() {
 
   return (
     <>
+      <ErrorBoundary>
       <Routes>
         <Route path="/" element={!isSignedIn ? <HomePage /> : <Navigate to={"/dashboard"} />} />
         <Route path="/dashboard" element={<Protected><DashboardPage /></Protected>} />
@@ -47,6 +49,7 @@ function App() {
         <Route path="/performance" element={<Protected><PerformancePage /></Protected>} />
         <Route path="/career-roadmap" element={<Protected><CareerRoadmapPage /></Protected>} />
       </Routes>
+      </ErrorBoundary>
 
       <Toaster toastOptions={{ duration: 3000 }} />
     </>
