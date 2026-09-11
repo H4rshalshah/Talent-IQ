@@ -15,6 +15,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+import Markdown from "../components/Markdown";
 import {
   useAbortInterview,
   useCompleteAiInterview,
@@ -33,7 +34,9 @@ function useTypewriter(text, { speed = 18, enabled = true } = {}) {
   const indexRef = useRef(0);
 
   useEffect(() => {
-    if (!enabled || !text) {
+    // Reduced motion (or a disabled typewriter) renders the full question at
+    // once — the interview stays fully usable without the animation.
+    if (!enabled || !text || prefersReducedMotion()) {
       setDisplayed(text || "");
       setIsComplete(true);
       return;
@@ -131,6 +134,9 @@ function AIInterviewPage() {
     }, 1000);
 
     return () => clearInterval(interval);
+    // timer must restart only when the interview identity/status changes —
+    // handleTimeUp intentionally excluded to avoid resetting the countdown
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interview?._id, interview?.status]);
 
   // initial question generation / resume
@@ -162,6 +168,9 @@ function AIInterviewPage() {
         }
       );
     }
+    // refetching the mutation object / questions array on every render would
+    // re-trigger generation; keyed on interview identity and question count
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, interview?._id, questions.length]);
 
   // GSAP question transition
@@ -474,7 +483,7 @@ function AIInterviewPage() {
                           ? "Good effort — here's how to go deeper"
                           : "Solid answer"}
                     </p>
-                    <p className="text-sm text-base-content/80">{feedback.text}</p>
+                    <Markdown className="text-sm">{feedback.text}</Markdown>
                   </div>
                 </div>
               </div>

@@ -62,13 +62,14 @@ export async function generatePerformanceReport(interview, questions) {
   }
 }
 
-function clampScore(value) {
+export function clampScore(value) {
   const n = Number(value);
   if (Number.isNaN(n)) return 0;
   return Math.min(Math.max(Math.round(n), 0), 100);
 }
 
-function buildHeuristicReport({ avgScore, strongAreas, weakAreas, difficultyPath }) {
+/** Deterministic report built only from stored evaluation data. */
+export function buildHeuristicReport({ avgScore, strongAreas, weakAreas, difficultyPath }) {
   const base = Math.round(avgScore * 10); // 0-100 from 0-10 avg
   const reachedHard = difficultyPath.includes("hard");
   const bonus = reachedHard ? 5 : 0;

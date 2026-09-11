@@ -7,9 +7,7 @@ import {
 } from "../services/rag/ingestion.service.js";
 import { queryVectorStore } from "../services/rag/vectorStore.service.js";
 import KnowledgeDocument from "../models/KnowledgeDocument.js";
-
-const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
-const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
+import { fail, ok } from "../lib/apiResponse.js";
 
 // RAG ingestion/search endpoints are dev/admin only.
 const isDev = () => ENV.NODE_ENV !== "production";

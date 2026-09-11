@@ -140,6 +140,13 @@ function useTypewriter(text, { speed = 20, enabled = true } = {}) {
       return;
     }
 
+    // Reduced motion: show the full text instead of typing it out
+    if (prefersReducedMotion()) {
+      setDisplayed(text);
+      setIsComplete(true);
+      return;
+    }
+
     // Reset and start fresh
     setDisplayed("");
     setIsComplete(false);

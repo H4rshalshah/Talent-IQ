@@ -3,16 +3,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { useProblem } from "../hooks/usePracticeProblems";
-import { PROBLEMS } from "../data/problems";
-import { executeCode } from "../lib/piston";
+import { codeApi } from "../api/code";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
-import { LANGUAGE_CONFIG } from "../data/problems";
+import { LANGUAGE_CONFIG } from "../data/languages";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 import AiReviewPanel from "../components/AiReviewPanel";
+import Markdown from "../components/Markdown";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
@@ -41,14 +41,10 @@ function SessionPage() {
     isParticipant
   );
 
-  // resolve the problem from the backend library (covers the full Codeforces
-  // bank + in-house problems); falls back to the legacy static list by title.
+  // resolve the problem from the backend library — the DB is the single source
+  // of truth for both in-house and Codeforces problems.
   const { data: problemDetail } = useProblem(session?.problemSlug || "");
-  const dbProblem = problemDetail?.data?.problem;
-  const staticProblem = session?.problem
-    ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
-    : null;
-  const problemData = dbProblem || staticProblem;
+  const problemData = problemDetail?.data?.problem;
 
   // Codeforces-sourced problems have no statement/starter code in our DB —
   // the room links out instead (licensing). The editor is replaced with a
@@ -114,9 +110,18 @@ function SessionPage() {
     setIsRunning(true);
     setOutput(null);
 
-    const result = await executeCode(selectedLanguage, code);
-    setOutput(result);
-    setIsRunning(false);
+    try {
+      // execution always happens server-side in the sandbox
+      const response = await codeApi.execute({ language: selectedLanguage, code });
+      setOutput(response?.data ?? null);
+    } catch (error) {
+      setOutput({
+        success: false,
+        error: error?.response?.data?.message || "Code execution is temporarily unavailable.",
+      });
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const handleEndSession = () => {
@@ -127,16 +132,16 @@ function SessionPage() {
         if (call) {
           try {
             await call.camera?.disable();
-          } catch (e) {
+          } catch {
             /* already off */
           }
           try {
             await call.microphone?.disable();
-          } catch (e) {
+          } catch {
             /* already off */
           }
         }
-      } catch (e) {
+      } catch {
         /* best effort */
       }
       // this will navigate the HOST to dashboard
@@ -223,14 +228,7 @@ function SessionPage() {
                     {normalizedProblem?.description?.text && (
                       <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
                         <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
-                        <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{normalizedProblem.description.text}</p>
-                          {normalizedProblem.description.notes?.map((note, idx) => (
-                            <p key={idx} className="text-base-content/90">
-                              {note}
-                            </p>
-                          ))}
-                        </div>
+                        <Markdown className="text-base">{normalizedProblem.description.text}</Markdown>
                       </div>
                     )}
 

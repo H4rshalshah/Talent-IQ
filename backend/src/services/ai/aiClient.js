@@ -176,6 +176,16 @@ const VALIDATORS = {
   },
 };
 
+/**
+ * Validate/coerce a parsed LLM response for a task. Exported so the same
+ * contract the runtime enforces can be unit tested directly.
+ */
+export function validateStructuredOutput(task, parsed) {
+  const validate = VALIDATORS[task];
+  if (!validate) throw new Error(`Unknown AI task: ${task}`);
+  return validate(parsed || {});
+}
+
 // Safe defaults so a provider failure never crashes the request.
 const FALLBACKS = {
   interview: () => ({

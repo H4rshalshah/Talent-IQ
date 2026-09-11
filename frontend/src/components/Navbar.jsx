@@ -9,6 +9,7 @@ import {
   MoonIcon,
   SparklesIcon,
   SunIcon,
+  TargetIcon,
 } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
 
@@ -63,13 +64,14 @@ function Navbar() {
     { to: "/interviews", label: "Interviews", icon: MessagesSquareIcon },
     { to: "/practice", label: "Practice", icon: BookOpenIcon },
     { to: "/performance", label: "Performance", icon: LineChartIcon },
+    { to: "/role-readiness", label: "Role Readiness", icon: TargetIcon },
     { to: "/career-roadmap", label: "Career Coach", icon: CompassIcon },
   ];
 
   return (
     <>
     <nav
-      className={`fixed top-0 left-0 right-0 bg-base-100/80 backdrop-blur-md border-b border-primary/20 z-50 shadow-lg transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 right-0 bg-base-100/80 backdrop-blur-md border-b border-primary/20 z-50 shadow-lg transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
     >

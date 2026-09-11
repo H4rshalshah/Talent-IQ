@@ -5,6 +5,7 @@ import {
   getProblem,
   getUserProgress,
   listProblems,
+  runProblem,
   submitProblem,
   toggleBookmark,
 } from "../controllers/problemController.js";
@@ -16,6 +17,7 @@ router.get("/progress", protectRoute, getUserProgress);
 router.get("/", protectRoute, listProblems);
 router.get("/:slug", protectRoute, getProblem);
 router.post("/:slug/bookmark", protectRoute, toggleBookmark);
+router.post("/:slug/run", protectRoute, aiLimiter, runProblem);
 router.post("/:slug/submit", protectRoute, aiLimiter, submitProblem);
 
 export default router;

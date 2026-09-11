@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Editor from "@monaco-editor/react";
 import { Loader2Icon, PlayIcon, SendIcon } from "lucide-react";
-import { LANGUAGE_CONFIG } from "../data/problems";
+import { LANGUAGE_CONFIG } from "../data/languages";
 
 // Letter chip shown for languages without an icon asset
 function LanguageBadge({ lang }) {

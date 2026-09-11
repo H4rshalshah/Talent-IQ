@@ -37,10 +37,15 @@ const COMPILER_OPTIONS = {
 export const EXECUTABLE_LANGUAGES = Object.keys(WANDBOX_COMPILERS);
 
 /**
- * Execute source code in the Wandbox sandbox.
+ * Execute source code in the remote Wandbox sandbox.
+ *
+ * Submitted code is untrusted: it runs on Wandbox's infrastructure, never on
+ * this host, so it has no access to application secrets, the database or the
+ * local filesystem.
+ *
  * @returns {Promise<{success:boolean, output:string, error?:string}>}
  */
-export async function executePiston(language, code) {
+export async function executeInSandbox(language, code) {
   const compiler = WANDBOX_COMPILERS[language];
   if (!compiler) return { success: false, output: "", error: `Unsupported language: ${language}` };
 

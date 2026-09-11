@@ -1,4 +1,5 @@
 import { getDifficultyBadgeClass } from "../lib/utils";
+import Markdown from "./Markdown";
 
 function ProblemDescription({ problem, currentProblemId, onProblemChange, allProblems }) {
   return (
@@ -38,11 +39,7 @@ function ProblemDescription({ problem, currentProblemId, onProblemChange, allPro
         {/* DESCRIPTION */}
         <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
           <h2 className="text-lg font-bold text-base-content mb-3">Description</h2>
-          <div className="space-y-3 text-base leading-relaxed text-base-content/90">
-            {problem.description.split("\n").map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
-          </div>
+          <Markdown className="text-base">{problem.description}</Markdown>
         </div>
 
         {/* EXAMPLES */}
@@ -100,9 +97,7 @@ function ProblemDescription({ problem, currentProblemId, onProblemChange, allPro
             <summary className="px-5 py-3 font-bold text-base-content cursor-pointer select-none">
               Expected approach
             </summary>
-            <div className="px-5 pb-5 text-sm leading-relaxed text-base-content/80 whitespace-pre-line">
-              {problem.solutionApproach}
-            </div>
+            <Markdown className="px-5 pb-5 text-sm">{problem.solutionApproach}</Markdown>
           </details>
         )}
       </div>

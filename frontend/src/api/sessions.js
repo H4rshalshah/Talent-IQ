@@ -1,35 +1,19 @@
 import axiosInstance from "../lib/axios";
 
+// The API returns the standard envelope ({ success, data }). Unwrapping here
+// keeps every consumer working with plain objects ({ session }, { sessions })
+// instead of reaching through response.data.data in components.
+const unwrap = (response) => response.data.data;
+
 export const sessionApi = {
-  createSession: async (data) => {
-    const response = await axiosInstance.post("/sessions", data);
-    return response.data;
-  },
+  createSession: async (data) => unwrap(await axiosInstance.post("/sessions", data)),
 
-  getActiveSessions: async () => {
-    const response = await axiosInstance.get("/sessions/active");
-    return response.data;
-  },
-  getMyRecentSessions: async () => {
-    const response = await axiosInstance.get("/sessions/my-recent");
-    return response.data;
-  },
+  getActiveSessions: async () => unwrap(await axiosInstance.get("/sessions/active")),
+  getMyRecentSessions: async () => unwrap(await axiosInstance.get("/sessions/my-recent")),
 
-  getSessionById: async (id) => {
-    const response = await axiosInstance.get(`/sessions/${id}`);
-    return response.data;
-  },
+  getSessionById: async (id) => unwrap(await axiosInstance.get(`/sessions/${id}`)),
 
-  joinSession: async (id) => {
-    const response = await axiosInstance.post(`/sessions/${id}/join`);
-    return response.data;
-  },
-  endSession: async (id) => {
-    const response = await axiosInstance.post(`/sessions/${id}/end`);
-    return response.data;
-  },
-  getStreamToken: async () => {
-    const response = await axiosInstance.get(`/chat/token`);
-    return response.data;
-  },
+  joinSession: async (id) => unwrap(await axiosInstance.post(`/sessions/${id}/join`)),
+  endSession: async (id) => unwrap(await axiosInstance.post(`/sessions/${id}/end`)),
+  getStreamToken: async () => unwrap(await axiosInstance.get("/chat/token")),
 };

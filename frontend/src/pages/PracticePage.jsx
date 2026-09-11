@@ -146,14 +146,14 @@ function PracticePage() {
       page,
       limit,
     }),
-    [source, q, difficulty, tag, bandIndex, band.min, band.max, page]
+    [source, q, difficulty, tag, band.min, band.max, page]
   );
 
   const { data, isLoading, isError, refetch, isFetching } = usePracticeProblems(filters);
   const { data: progressData } = useProblemProgress();
   const syncMutation = useSyncCodeforces();
 
-  const problems = data?.data?.problems || [];
+  const problems = useMemo(() => data?.data?.problems || [], [data]);
   const pagination = data?.data?.pagination || { total: 0, totalPages: 0, page: 1 };
 
   const allTags = useMemo(() => {

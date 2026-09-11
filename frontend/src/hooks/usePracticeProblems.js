@@ -68,6 +68,18 @@ export const useSyncCodeforces = () => {
   });
 };
 
+/**
+ * Run against the visible sample tests. This never records solved status and
+ * never triggers hidden tests — it is a quick feedback loop, not a verdict.
+ */
+export const useRunProblem = () =>
+  useMutation({
+    mutationKey: ["runProblem"],
+    mutationFn: ({ slug, language, code }) => problemApi.runProblem(slug, { language, code }),
+    onError: (error) =>
+      toast.error(error?.response?.data?.message || "Code execution is temporarily unavailable"),
+  });
+
 /** Judge submission (in-house problems only). */
 export const useSubmitProblem = () => {
   const queryClient = useQueryClient();

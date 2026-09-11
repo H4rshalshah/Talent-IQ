@@ -3,9 +3,7 @@ import Performance from "../models/Performance.js";
 import Interview from "../models/Interview.js";
 import { generateCareerRoadmap } from "../services/ai/careerCoach.service.js";
 import { ROLES } from "../services/ai/topics.js";
-
-const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
-const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
+import { fail, ok } from "../lib/apiResponse.js";
 
 const avg = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0);
 

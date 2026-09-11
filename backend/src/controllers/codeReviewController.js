@@ -1,10 +1,13 @@
 import CodeSubmission from "../models/CodeSubmission.js";
+import Interview from "../models/Interview.js";
+import Problem from "../models/Problem.js";
 import { reviewCode } from "../services/ai/codeReview.service.js";
+import { EXECUTABLE_LANGUAGES } from "../services/problems/executor.service.js";
+import { fail, ok } from "../lib/apiResponse.js";
 
-const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
-const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
-
-const ALLOWED_LANGUAGES = ["javascript", "python", "java"];
+// Review is offered for every language the sandbox can actually execute, so
+// the AI reviewer can never be asked about a language the editor hides.
+const ALLOWED_LANGUAGES = new Set(EXECUTABLE_LANGUAGES);
 
 export async function reviewCodeSubmission(req, res) {
   try {
@@ -19,28 +22,31 @@ export async function reviewCodeSubmission(req, res) {
       sessionId,
     } = req.body;
 
-    if (!problemId) return fail(res, "problemId is required");
-    if (!language || !ALLOWED_LANGUAGES.includes(language)) {
-      return fail(res, "Language must be one of: javascript, python, java");
+    if (!problemId) return fail(res, "problemId is required", 422, "VALIDATION_ERROR");
+    if (!language || !ALLOWED_LANGUAGES.has(language)) {
+      return fail(
+        res,
+        `Language must be one of: ${EXECUTABLE_LANGUAGES.join(", ")}`,
+        422,
+        "VALIDATION_ERROR"
+      );
     }
     if (!code || typeof code !== "string" || code.trim().length === 0) {
-      return fail(res, "Code is required");
+      return fail(res, "Code is required", 422, "VALIDATION_ERROR");
     }
-    if (code.length > 50000) return fail(res, "Code is too long to review");
+    if (code.length > 50000) return fail(res, "Code is too long to review", 413, "PAYLOAD_TOO_LARGE");
 
     // verify interview ownership when an interviewId (or sessionId) is supplied
     let resolvedInterviewId = interviewId || null;
     if (sessionId && !resolvedInterviewId) {
-      const Interview = (await import("../models/Interview.js")).default;
       const linked = await Interview.findOne({ sessionId });
       if (linked) resolvedInterviewId = linked._id;
     }
     if (resolvedInterviewId) {
-      const Interview = (await import("../models/Interview.js")).default;
       const interview = await Interview.findById(resolvedInterviewId);
-      if (!interview) return fail(res, "Interview not found", 404);
+      if (!interview) return fail(res, "Interview not found", 404, "NOT_FOUND");
       if (interview.candidate.toString() !== req.user._id.toString()) {
-        return fail(res, "You do not have access to this interview", 403);
+        return fail(res, "You do not have access to this interview", 403, "FORBIDDEN");
       }
     }
 
@@ -49,7 +55,6 @@ export async function reviewCodeSubmission(req, res) {
     let resolvedTitle = problemTitle;
     let solutionApproach = "";
     try {
-      const Problem = (await import("../models/Problem.js")).default;
       const bankProblem = await Problem.findOne({ slug: problemId }).lean();
       if (bankProblem) {
         resolvedTitle = bankProblem.title;
@@ -74,7 +79,7 @@ export async function reviewCodeSubmission(req, res) {
       interviewId: resolvedInterviewId,
       candidate: req.user._id,
       problemId,
-      problemTitle: problemTitle || problemId,
+      problemTitle: resolvedTitle || problemId,
       language,
       code,
       testResults,
@@ -86,9 +91,6 @@ export async function reviewCodeSubmission(req, res) {
     return ok(res, { review, submissionId: submission._id }, 201);
   } catch (error) {
     console.error("Error in reviewCodeSubmission:", error.message);
-    if (/temporarily unavailable/i.test(error.message)) {
-      return fail(res, error.message, 503);
-    }
-    return fail(res, "Unable to review code", 500);
+    return fail(res, "Unable to review code", 500, "AI_REVIEW_FAILED");
   }
 }

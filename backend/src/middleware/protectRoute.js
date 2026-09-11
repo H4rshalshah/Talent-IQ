@@ -1,6 +1,7 @@
 import { requireAuth } from "@clerk/express";
 import User from "../models/User.js";
 import { upsertStreamUser } from "../lib/stream.js";
+import { fail } from "../lib/apiResponse.js";
 
 // If the Clerk -> Inngest webhook isn't configured (common in local dev), a
 // newly signed-in user has no record in MongoDB yet. This fallback provisions
@@ -49,7 +50,7 @@ export const protectRoute = [
     try {
       const clerkId = req.auth().userId;
 
-      if (!clerkId) return res.status(401).json({ message: "Unauthorized - invalid token" });
+      if (!clerkId) return fail(res, "Unauthorized - invalid token", 401, "UNAUTHORIZED");
 
       // find user in db by clerk ID
       let user = await User.findOne({ clerkId });
@@ -59,7 +60,7 @@ export const protectRoute = [
         user = await provisionUserFromClerk(clerkId);
       }
 
-      if (!user) return res.status(404).json({ message: "User not found" });
+      if (!user) return fail(res, "User account not found or could not be provisioned", 404, "USER_NOT_FOUND");
 
       // attach user to req
       req.user = user;
@@ -67,7 +68,7 @@ export const protectRoute = [
       next();
     } catch (error) {
       console.error("Error in protectRoute middleware", error);
-      res.status(500).json({ message: "Internal Server Error" });
+      fail(res, "Internal Server Error", 500, "INTERNAL_ERROR");
     }
   },
 ];

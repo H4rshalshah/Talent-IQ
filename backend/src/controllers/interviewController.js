@@ -3,16 +3,14 @@ import InterviewQuestion from "../models/InterviewQuestion.js";
 import Performance from "../models/Performance.js";
 import CodeSubmission from "../models/CodeSubmission.js";
 import CareerRoadmap from "../models/CareerRoadmap.js";
-import { generateQuestion, evaluateAnswer, isAiInterviewAvailable } from "../services/ai/interview.service.js";
+import { generateQuestion, evaluateAnswer } from "../services/ai/interview.service.js";
 import { generatePerformanceReport } from "../services/ai/evaluation.service.js";
 import { ingestCandidateHistory } from "../services/rag/ingestion.service.js";
 import { ROLES, roleLabel } from "../services/ai/topics.js";
+import { fail, ok } from "../lib/apiResponse.js";
 
 const VALID_DIFFICULTIES = ["easy", "medium", "hard"];
 const VALID_EXPERIENCE = ["entry", "mid", "senior"];
-
-const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
-const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
 
 // ---------------------------------------------------------------------------
 // helpers

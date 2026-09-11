@@ -1,8 +1,6 @@
 import { ENV } from "../lib/env.js";
 import { syncCodeforcesProblems } from "../services/codeforces/sync.service.js";
-
-const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
-const fail = (res, message, status = 400) => res.status(status).json({ success: false, message });
+import { fail, ok } from "../lib/apiResponse.js";
 
 /** Lightweight admin gate — no auth-system changes. */
 export function requireCodeforcesAdmin(req, res, next) {
@@ -12,10 +10,10 @@ export function requireCodeforcesAdmin(req, res, next) {
     .filter(Boolean);
 
   if (!adminEmails.length) {
-    return res.status(403).json({ success: false, message: "Codeforces sync is disabled (no ADMIN_EMAILS configured)" });
+    return fail(res, "Codeforces sync is disabled (no ADMIN_EMAILS configured)", 403, "SYNC_DISABLED");
   }
   if (!adminEmails.includes(String(req.user?.email || "").toLowerCase())) {
-    return res.status(403).json({ success: false, message: "You are not authorized to run the Codeforces sync" });
+    return fail(res, "You are not authorized to run the Codeforces sync", 403, "FORBIDDEN");
   }
   next();
 }

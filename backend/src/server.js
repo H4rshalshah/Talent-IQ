@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { fileURLToPath } from "url";
 import cors from "cors";
 import { serve } from "inngest/express";
 import { clerkMiddleware } from "@clerk/express";
@@ -19,16 +20,22 @@ import careerCoachRoutes from "./routes/careerCoachRoutes.js";
 import ragRoutes from "./routes/ragRoutes.js";
 import problemRoutes from "./routes/problemRoutes.js";
 import codeforcesRoutes from "./routes/codeforcesRoutes.js";
+import roleReadinessRoutes from "./routes/roleReadinessRoutes.js";
 import { syncCodeforcesProblems } from "./services/codeforces/sync.service.js";
 import { getDashboardData } from "./controllers/interviewController.js";
 import { protectRoute } from "./middleware/protectRoute.js";
+import { errorHandler, notFoundHandler, requestLogger } from "./middleware/errorHandler.js";
+import { clientDistExists, clientIndexHtml, resolveClientDist } from "./lib/clientPaths.js";
 
 const app = express();
 
-const __dirname = path.resolve();
+// Resolved from this module, not the process cwd — hosts that start the
+// process from the repo root would otherwise serve 404s for /assets/*.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // middleware
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use(requestLogger);
 // credentials:true meaning?? => server allows a browser to include cookies on request
 const allowedOrigins = (ENV.CLIENT_URL || "")
   .split(",")
@@ -62,21 +69,45 @@ app.use("/api/career-roadmap", careerCoachRoutes);
 app.use("/api/rag", ragRoutes);
 app.use("/api/problems", problemRoutes);
 app.use("/api/codeforces", codeforcesRoutes);
+app.use("/api/role-readiness", roleReadinessRoutes);
 
 app.get("/api/dashboard", protectRoute, getDashboardData);
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ msg: "api is up and running" });
+  res.status(200).json({ success: true, data: { status: "ok" } });
 });
 
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  const clientDist = resolveClientDist(__dirname);
 
-  app.get("/{*any}", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
-  });
+  if (clientDistExists(__dirname)) {
+    app.use(express.static(clientDist));
+    // SPA fallback — serve the shell for client-side routes
+    app.get("/{*any}", (req, res) => {
+      res.sendFile(clientIndexHtml(__dirname));
+    });
+  } else {
+    // Fail loudly instead of silently serving nothing: a missing build is the
+    // classic cause of a blank white page in production.
+    console.error(
+      `⚠️ Production build not found at ${clientDist}. ` +
+        "The API will run, but the web client will not be served. " +
+        "Run `npm run build` (or deploy the frontend separately)."
+    );
+    app.get("/", (req, res) => {
+      res.status(200).json({
+        success: true,
+        data: { service: "talent-iq-api", status: "running", client: "not_served" },
+      });
+    });
+  }
 }
+
+// Centralized error handling — registered last so every route (including the
+// production SPA fallback above) gets a chance to handle the request first.
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

@@ -12,7 +12,8 @@ Talent-IQ is a full-stack interview platform with two interview modes: live **hu
 - 💻 **AI Code Review** — correctness, time/space complexity, code quality, edge cases, and optimizations compared against a bank of reference solutions
 - 📊 **Performance Analytics** — overall score, skill breakdown, interview history, and score trends
 - 🧭 **AI Career Coach** — personalized improvement roadmap built from actual interview performance and retrieved learning material
-- 🧩 **Coding Practice** — LeetCode-style problem bank (13 curated problems, difficulty + tag filters, search, per-user solved/attempted status), VSCode-powered Monaco editor, 10 fully-working languages, hidden test-case judging via Wandbox
+- 🧩 **Coding Practice** — problem bank (curated in-house problems + the full Codeforces problem set, difficulty/tag/rating filters, search, per-user solved/attempted status), Monaco editor, 10 verified languages, **Run** (visible sample tests) vs **Submit** (hidden judging), hidden tests never returned to the client
+- 🎯 **Role Readiness** — a deterministic, domain-aware engine that scores your demonstrated skills against a target role's requirements (built from interview question scores, performance metrics and solved problems — no estimation)
 - 🎥 **Stream video infrastructure** — 1-on-1 rooms, room locking, live presence
 - 🔐 **Authentication** — Clerk
 - 🎨 **Smooth-scroll UI with GSAP** — purposeful entrance/scroll animations (Lenis + ScrollTrigger), `prefers-reduced-motion` respected
@@ -20,22 +21,50 @@ Talent-IQ is a full-stack interview platform with two interview modes: live **hu
 ## Architecture
 
 ```text
-Frontend (React + Vite)
+User
+ │
+ ▼
+React Frontend (Vite, TanStack Query, Clerk)
+ │  every request goes through src/api/* → axios
+ ▼
+Express API  ── protectRoute (Clerk) ── rate limits ── request logger
+ │                                     notFound + errorHandler
+ ├───────────────────────────────┬───────────────────────────────┐
+ ▼                               ▼                               ▼
+MongoDB                       AI Layer                     Code execution
+(models + indexes)                │                         (Wandbox sandbox)
+ │                                │                               ▲
+ │                                ├── aiClient (per-task routing)  │
+ │                                │      ├── Groq  (primary)       │
+ │                                │      └── Gemini (failover)     │
+ │                                │                                │
+ │                                ▼                                │
+ │                          RAG Retriever                          │
+ │                        (top-k, scored chunks)                   │
+ │                                │                                │
+ └──────────────► Analytics services ◄──────── codegen harness ────┘
+                    ├── performance aggregation
+                    ├── career roadmap
+                    └── role readiness
+```
+
+The API never talks to a provider directly: all LLM traffic goes through
+`services/ai/aiClient.js` and all vector traffic through
+`services/rag/vectorStore.service.js`, so providers can be swapped in one place.
+
+Every AI action follows the same pattern:
+
+```text
+Interview state (role, topic, difficulty, weak areas)
         │
         ▼
-   REST API (Express)
+  RAG RETRIEVER ──► top-k relevant chunks (source, chunk id, score, content)
         │
         ▼
-      MongoDB ──────────────► Vector store (MongoDB collection + embeddings)
+  LLM prompt = [SYSTEM INSTRUCTION] + [RETRIEVED CONTEXT] + [CANDIDATE CONTEXT] + [TASK]
         │
         ▼
-    AI Service ──► RAG Retriever ──► Vector Database
-        │                              (job-knowledge / question-bank /
-        ▼                               candidate-history collections)
-Interview Evaluation
-        │
-        ▼
-   Performance → Career Roadmap
+  defensive JSON parse → per-task schema validation → clamp/sanitize → store
 ```
 
 Every AI action follows the same pattern:
@@ -119,10 +148,67 @@ See `.env.example` in each folder. **Never commit `.env` files.**
 
 ## Coding Practice (Problem Bank)
 
-- **Source** — the 13 problems in `backend/src/data/problems.seed.js` are original, written in-house in a LeetCode-style format (title, slug, difficulty, tags, markdown description, constraints, examples, starter code, hidden + visible test cases, solution approach). No scraping — LeetCode content is copyrighted.
+- **Sources** — the in-house problems in `backend/src/data/problems.seed.js` are original, written in a LeetCode-style format (title, slug, difficulty, tags, markdown description, constraints, examples, starter code, hidden + visible test cases, solution approach) — no scraping, since LeetCode content is copyrighted. The Codeforces problem set is ingested from the public Codeforces API and stored as **metadata only** (contestId, index, name, rating, tags, URL).
 - **Languages** — 10 languages work end-to-end (run + submit + judge): **C, C++, Java, Python, JavaScript, C#, Go, Rust, PHP, Ruby**. TypeScript, Kotlin, and Swift are **not** shown in the language selector: the Wandbox runtimes for them are broken (TS ignores compiler flags and lacks a modern lib; Swift crashes; no Kotlin runtime), so per the project's honesty rule they are hidden rather than left silently non-functional.
-- **Judging** — `POST /api/problems/:id/submit` replaces the user's solution into a generated harness per language, runs it against the problem's hidden test cases on Wandbox, compares canonical expected output, and records per-user status.
+- **Judging** — `POST /api/problems/:slug/submit` replaces the user's solution into a generated harness per language, runs it against the problem's sample **and** hidden test cases in the sandbox, compares canonical expected output, and records per-user status. Hidden test details are never sent to the client.
+- **Running** — `POST /api/problems/:slug/run` uses only the visible sample tests and returns structured per-test results (input / expected / actual / passed). It never records solved status, so candidates can iterate freely.
+- **Execution security** — the browser never executes code. Every run (practice problems *and* the human-session collaborative editor) goes through one authenticated, rate-limited, size-limited endpoint backed by the remote sandbox. Submitted code is treated as untrusted and has no access to application secrets or the database.
 - **Per-user status** — solved / attempted counts come from `ProblemSubmission` records, shown on the practice list and problem page.
+
+## Codeforces Integration
+
+Talent-IQ never scrapes Codeforces, never automates login, and never asks for or
+stores Codeforces credentials. It uses the public `problemset.problems` API only,
+with a 20s timeout, shape validation, upserts keyed on `externalId` (so repeated
+syncs never duplicate) and a graceful failure path — if Codeforces is down the
+bank keeps serving whatever is already stored, and the UI shows a clear message
+instead of spinning forever.
+
+Every external problem card and detail page has a **Practice on Codeforces**
+button that opens the official problem page in a new tab
+(`https://codeforces.com/problemset/problem/{contestId}/{index}`). Codeforces
+owns authentication, the statement and the judge; Talent-IQ owns discovery,
+metadata, filtering, bookmarking and progress tracking.
+
+## Role Readiness (domain-aware AI)
+
+`GET /api/role-readiness?role=<slug>` compares what a candidate has actually
+demonstrated against the skill requirements of a target role. The engine is
+**deterministic and evidence-based**:
+
+```text
+interview question scores (per topic)  ─┐
+performance report metrics              ─┼─►  per-skill score (0-100)
+solved practice problems                ─┘            │
+                                                       ▼
+                                       overall readiness + strong areas
+                                       + gaps + prioritised next steps
+```
+
+A skill with no supporting evidence is reported as `no_data` — it is never
+estimated. Results drive prioritised next steps and feed the career roadmap.
+
+## Quality Engineering
+
+```bash
+# backend — unit tests for the business logic (no network, no DB required)
+cd backend && npm test        # node:test — scores, adaptivity, validation, URLs
+cd backend && npm run lint    # syntax gate over every source file
+
+# frontend
+cd frontend && npm run lint   # ESLint (0 errors, 0 warnings)
+cd frontend && npm run build  # production build
+```
+
+Tests cover the logic that is expensive to get wrong and easy to verify in
+isolation: adaptive difficulty transitions, deterministic topic selection,
+AI JSON schema validation + clamping, performance-report aggregation,
+problem filtering/pagination, Codeforces rating→difficulty mapping and URL
+generation, the API response envelope, and the role-readiness engine.
+
+CI (`.github/workflows/ci.yml`) runs install → lint → test → build for both
+packages on every push and pull request, plus a secret guard that fails the
+build if any `.env` file is tracked.
 
 ## Local Setup
 
@@ -220,16 +306,21 @@ GET  /api/interviews                  list my interviews
 GET  /api/interviews/:id              full interview detail (questions, report, submissions)
 POST /api/interviews/:id/abort        abort an interview
 
-POST /api/code/review                 AI code review
+POST /api/code/review                 AI code review (all 10 executable languages)
+POST /api/code/execute                sandboxed standalone snippet (human-session editor)
 
-GET  /api/problems                    list problems (filters: difficulty, tag, search)
+GET  /api/problems                    list problems (source, difficulty, tag, rating, search)
 GET  /api/problems/:slug              problem detail (description, starter code per language, examples)
-POST /api/problems/:slug/run          run code against visible sample tests
-POST /api/problems/:slug/submit       judge against hidden tests, record per-user status
-GET  /api/problems/status             per-user solved/attempted summary
+POST /api/problems/:slug/run          run against VISIBLE sample tests (never records status)
+POST /api/problems/:slug/submit       judge against sample + hidden tests, record status
+GET  /api/problems/progress           per-user solved/attempted/bookmarked summary
+POST /api/problems/:slug/bookmark     toggle bookmark
 
 GET  /api/performance                 aggregated performance dashboard
 GET  /api/performance/:interviewId    single interview performance
+
+GET  /api/role-readiness?role=...     role readiness from stored data
+GET  /api/role-readiness/requirements the role → skill matrix used for scoring
 
 GET  /api/career-roadmap              latest roadmap
 POST /api/career-roadmap/generate     generate a personalized roadmap
@@ -238,40 +329,67 @@ POST /api/rag/ingest                  ingest knowledge base (dev only)
 POST /api/rag/search                  debug retrieval (dev only)
 GET  /api/rag/stats                   knowledge base stats
 
+GET  /health                          liveness probe
+
 # existing endpoints preserved
 POST /api/sessions ...                human interview sessions (video/chat/code)
 GET  /api/chat/token                  Stream token
 ```
 
-Responses use a consistent envelope: `{ "success": true, "data": {} }` or `{ "success": false, "message": "..." }`.
+Every modern endpoint uses one envelope and one error shape:
+
+```json
+{ "success": true, "data": {} }
+{ "success": false, "message": "Human readable message", "code": "VALIDATION_ERROR" }
+```
+
+`code` is a stable machine-readable identifier (`NOT_FOUND`, `VALIDATION_ERROR`,
+`HARNESS_MODIFIED`, `EXECUTION_UNAVAILABLE`, `SERVICE_UNAVAILABLE`, ...). Unknown
+routes return `ROUTE_NOT_FOUND`; unhandled errors are normalized by the central
+error handler and never leak stack traces in production.
+
+### Run vs Submit
+
+| | `POST /:slug/run` | `POST /:slug/submit` |
+| --- | --- | --- |
+| Test cases | visible sample tests only | sample + hidden tests |
+| Records solved status | no | yes |
+| Returns | per-test input/expected/actual | counts + visible sample detail |
+| Hidden tests exposed | never | never |
 
 ## Project Structure
 
 ```text
 backend/
+  scripts/           # check-syntax (CI gate), verify-codegen (language smoke test)
   src/
-    controllers/     # interview, code review, performance, career coach, RAG, problems
+    controllers/     # interview, code review/execute, performance, career coach,
+                     # RAG, problems (list/detail/run/submit), role readiness
     data/            # knowledge/ (checked-in reference material) + problems.seed.js
-    lib/             # env, db, stream, inngest, rate limits
-    middleware/      # Clerk protectRoute
+    lib/             # env, db, stream, inngest, rate limits, apiResponse envelope
+    middleware/      # Clerk protectRoute, errorHandler + requestLogger
     models/          # Session, User, Interview, InterviewQuestion, CodeSubmission,
                      # Performance, CareerRoadmap, KnowledgeDocument, RetrievalLog,
                      # Problem, ProblemSubmission
     routes/          # REST API routes
     services/
       ai/            # aiClient + providers/ (groq, gemini), embedding, interview
-                     # (adaptive engine), evaluation, codeReview, careerCoach, prompts, topics
-      problems/      # codegen (per-language starter code + judge harnesses), executor
-                     # (Wandbox), seed (boot-time seeding)
+                     # (adaptive engine), evaluation, codeReview, careerCoach,
+                     # prompts, topics  (+ *.test.js)
+      analytics/     # roleReadiness engine (deterministic, evidence-based)
+      problems/      # codegen (starter code + judge harnesses), executor (Wandbox),
+                     # problemQuery (filters/pagination), seed
       rag/           # vectorStore (provider-agnostic), ingestion, retriever
 frontend/
   src/
-    api/             # axios API modules
-    components/      # UI components (readiness card, charts, AI review panel, ...)
+    api/             # axios API modules (interviews, problems, code, performance,
+                     # careerRoadmap, roleReadiness, sessions)
+    components/      # UI components (markdown renderer, charts, AI review, ...)
+    data/            # languages.js (editor language matrix)
     hooks/           # TanStack Query hooks
     lib/animations/  # GSAP setup, Lenis smooth scroll, reveal/count-up hooks
     pages/           # landing, dashboard, interviews (AI + human), practice,
-                     # performance, career roadmap, results
+                     # performance, role readiness, career roadmap, results
 ```
 
 ## AI Service Design Notes
@@ -279,8 +397,14 @@ frontend/
 - **Modular AI layer** — all LLM calls go through `services/ai/aiClient.js` (with per-task provider routing to Groq/Gemini via `services/ai/providers/`). No OpenAI/other SDKs are used.
 - **Swappable vector store** — all vector operations go through `services/rag/vectorStore.service.js`. The rest of the codebase never talks to a provider SDK directly.
 - **Structured output** — prompts request JSON and responses are validated/sanitized before persisting; malformed output is retried, then a safe fallback is used.
-- **Graceful degradation** — LLM failure, retrieval failure, or a missing API key never crashes the app; the UI shows "AI interviewer is temporarily unavailable" and retrieval falls back to ungrounded generation.
-- **Rate limiting** — AI and RAG endpoints are rate limited (`express-rate-limit`).
+- **Graceful degradation** — LLM failure, retrieval failure, or a missing API key never crashes the app; the UI shows "AI interviewer is temporarily unavailable" and retrieval falls back to ungrounded generation. Performance reports and career roadmaps fall back to deterministic, data-derived versions so the page always renders something honest.
+- **Never trust AI output** — every model response is defensively parsed (markdown fences/preamble stripped), validated against a per-task schema, clamped to valid ranges and only then stored. Malformed output triggers one stricter retry, then a safe default.
+- **Centralized error handling** — one error handler and one 404 handler normalize every failure into the standard envelope with a stable `code`. Technical detail (including stack traces) is logged server-side only.
+- **Validation at the edge** — request bodies, language identifiers, code size, pagination and AI responses are all bounded and validated before expensive work happens.
+- **Rate limiting** — AI, code review/execution and RAG endpoints are rate limited (`express-rate-limit`).
+- **Observability** — a dependency-free request logger records method, path, status and duration; production logs never contain secrets or answer content.
+- **Responsible AI** — AI assessments are labeled as guidance in the UI and are derived only from observable interview/coding performance; no protected characteristics are inferred.
+- **Secure by default** — all code execution happens in a remote sandbox (never on the API host), submitted code is treated as untrusted, hidden tests are never serialized to the client, and markdown from AI output is rendered without raw HTML.
 
 ## Screenshots
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
+import Markdown from "../components/Markdown";
 import { useInterviewById } from "../hooks/useInterviews";
 import { useCountUp, useReveal } from "../lib/animations/useReveal";
 import { roleLabel, topicLabel } from "../data/interviewConfig";
@@ -75,7 +76,7 @@ function QuestionReview({ question, index }) {
           {question.evaluation && (
             <div className="bg-base-200 rounded-xl p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-base-content/50 mb-2">AI evaluation</p>
-              <p className="text-sm leading-relaxed mb-2">{question.evaluation.feedback}</p>
+              <Markdown className="text-sm mb-2">{question.evaluation.feedback}</Markdown>
               {question.evaluation.missingConcepts?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {question.evaluation.missingConcepts.map((c) => (
@@ -200,6 +201,22 @@ function InterviewResultPage() {
               <ScoreCard label="Coding" value={performance.codingScore} gradient="from-accent to-primary" />
               <ScoreCard label="Communication" value={performance.communicationScore} gradient="from-success to-primary" />
             </div>
+
+            {/* AI SUMMARY */}
+            {performance.summary && (
+              <div className="reveal card bg-base-100 border-2 border-primary/20 mb-8">
+                <div className="card-body py-5">
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-base-content/60 mb-2">
+                    AI Summary
+                  </h3>
+                  <Markdown className="text-sm">{performance.summary}</Markdown>
+                  <p className="text-xs text-base-content/40 mt-2 flex items-center gap-1.5">
+                    <TriangleAlertIcon className="size-3.5 shrink-0" />
+                    This assessment is AI-generated and should be treated as guidance.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* SUMMARY CHIPS */}
             <div className="reveal grid sm:grid-cols-2 gap-4 mb-8">

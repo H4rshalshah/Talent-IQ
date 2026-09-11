@@ -8,6 +8,7 @@ import {
   SparklesIcon,
 } from "lucide-react";
 import { useCodeReview } from "../hooks/useCodeReview";
+import Markdown from "./Markdown";
 
 function AiReviewPanel({ problemId, problemTitle, problemStatement, language, code, testResults, sessionId }) {
   const reviewMutation = useCodeReview();
@@ -114,9 +115,7 @@ function AiReviewPanel({ problemId, problemTitle, problemStatement, language, co
             </div>
 
             {/* SUMMARY */}
-            {review.summary && (
-              <p className="text-sm text-base-content/80 leading-relaxed">{review.summary}</p>
-            )}
+            {review.summary && <Markdown className="text-sm">{review.summary}</Markdown>}
 
             {/* ISSUES */}
             {review.issues?.length > 0 && (

@@ -7,22 +7,29 @@ import ProblemDescription from "../components/ProblemDescription";
 import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import AiReviewPanel from "../components/AiReviewPanel";
-import { executeCode } from "../lib/piston";
-import { LANGUAGE_CONFIG } from "../data/problems";
-import { useProblem, useSubmitProblem, usePracticeProblems } from "../hooks/usePracticeProblems";
+import { LANGUAGE_CONFIG } from "../data/languages";
+import {
+  useProblem,
+  usePracticeProblems,
+  useRunProblem,
+  useSubmitProblem,
+} from "../hooks/usePracticeProblems";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
-import { ExternalLinkIcon, LoaderIcon, StarIcon } from "lucide-react";
+import { AlertTriangleIcon, ExternalLinkIcon, LoaderIcon, StarIcon } from "lucide-react";
 import { getDifficultyBadgeClass, formatSolvedCount } from "../lib/utils";
+import { prefersReducedMotion } from "../lib/animations/gsap.setup";
 
 function ProblemPage() {
-  const { slug } = useParams();
+  // NOTE: the route is declared as "/problem/:id", so the param is `id`.
+  const { id: slug } = useParams();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useProblem(slug);
+  const { data, isLoading, isError, error, refetch } = useProblem(slug);
   // dropdown lists only in-house problems (the ones with an editor)
   const { data: listData } = usePracticeProblems({ source: "custom", page: 1, limit: 100 });
+  const runMutation = useRunProblem();
   const submitMutation = useSubmitProblem();
 
   const problem = data?.data?.problem;
@@ -39,7 +46,6 @@ function ProblemPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState("");
   const [output, setOutput] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState("output");
 
   // load starter code once the problem arrives / language changes
@@ -62,66 +68,55 @@ function ProblemPage() {
 
   const handleProblemChange = (newSlug) => navigate(`/problem/${newSlug}`);
 
+  // purely celebratory — skipped entirely when the user prefers reduced motion
   const triggerConfetti = () => {
+    if (prefersReducedMotion()) return;
     confetti({ particleCount: 80, spread: 250, origin: { x: 0.2, y: 0.6 } });
     confetti({ particleCount: 80, spread: 250, origin: { x: 0.8, y: 0.6 } });
   };
 
-  const normalizeOutput = (output) =>
-    output
-      .trim()
-      .toLowerCase()
-      .split("\n")
-      .map((line) =>
-        line
-          .trim()
-          .replace(/\[\s+/g, "[")
-          .replace(/\s+\]/g, "]")
-          .replace(/\s*,\s*/g, ",")
-      )
-      .filter((line) => line.length > 0)
-      .join("\n");
-
-  const handleRunCode = async () => {
-    if (!problem) return;
-    setIsRunning(true);
+  const handleRunCode = () => {
+    if (!problem || !code.trim()) return;
     setOutput(null);
+    setActiveTab("output");
 
-    const result = await executeCode(selectedLanguage, code);
-    setOutput(result);
-    setIsRunning(false);
-
-    if (result.success) {
-      const expected = problem.expectedOutput || "";
-      const passed = normalizeOutput(result.output) === normalizeOutput(expected);
-      if (passed) {
-        triggerConfetti();
-        toast.success("All sample tests passed! Great job!");
-      } else {
-        toast.error("Sample tests failed. Check your output!");
+    runMutation.mutate(
+      { slug: problem.slug, language: selectedLanguage, code },
+      {
+        onSuccess: (response) => {
+          const res = response?.data;
+          setOutput(res);
+          if (res?.error) {
+            toast.error("Code execution failed — check the error output");
+          } else if (res?.status === "passed") {
+            triggerConfetti();
+            toast.success(`All ${res.totalCount} sample tests passed!`);
+          } else {
+            toast.error(`${res?.passedCount ?? 0}/${res?.totalCount ?? 0} sample tests passed`);
+          }
+        },
       }
-    } else {
-      toast.error("Code execution failed!");
-    }
+    );
   };
 
   const handleSubmit = () => {
-    if (!problem) return;
+    if (!problem || !code.trim()) return;
+    setActiveTab("output");
+
     submitMutation.mutate(
       { slug: problem.slug, language: selectedLanguage, code },
       {
         onSuccess: (response) => {
           const res = response?.data;
+          setOutput(res);
           if (res?.status === "solved") {
             triggerConfetti();
-            toast.success(`All ${res.totalCount} tests passed — solved!`);
+            toast.success(`Accepted — all ${res.totalCount} tests passed!`);
           } else if (res?.error) {
             toast.error("Compilation or runtime error");
           } else {
             toast.error(`${res?.passedCount ?? 0}/${res?.totalCount ?? 0} tests passed`);
           }
-          if (res) setOutput({ success: !res.error, output: res.output || "", error: res.error });
-          setActiveTab("output");
         },
       }
     );
@@ -133,6 +128,26 @@ function ProblemPage() {
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <LoaderIcon className="size-10 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="h-screen bg-base-100 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <AlertTriangleIcon className="size-12 mx-auto text-warning mb-3" />
+            <p className="font-semibold mb-1">Couldn't load this problem</p>
+            <p className="text-sm text-base-content/60 mb-4">
+              {error?.response?.data?.message || "Please try again."}
+            </p>
+            <button onClick={() => refetch()} className="btn btn-primary btn-sm">
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -172,7 +187,8 @@ function ProblemPage() {
               ))}
             </div>
             <p className="text-base-content/70 mb-6">
-              This problem is hosted on Codeforces. Open it there to read the statement and submit your solution.
+              This problem is hosted on Codeforces. Open it there to read the statement and submit
+              your solution with Codeforces' own judge.
             </p>
             <a
               href={problem.url}
@@ -180,7 +196,7 @@ function ProblemPage() {
               rel="noopener noreferrer"
               className="btn btn-primary gap-2"
             >
-              Solve on Codeforces
+              Practice on Codeforces
               <ExternalLinkIcon className="size-4" />
             </a>
           </div>
@@ -215,7 +231,7 @@ function ProblemPage() {
                   selectedLanguage={selectedLanguage}
                   languages={languages}
                   code={code}
-                  isRunning={isRunning}
+                  isRunning={runMutation.isPending}
                   onLanguageChange={handleLanguageChange}
                   onCodeChange={setCode}
                   onRunCode={handleRunCode}

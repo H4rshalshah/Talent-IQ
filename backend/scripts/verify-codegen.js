@@ -1,8 +1,8 @@
 // Verifies the codegen harnesses end-to-end: for every supported language it
 // generates the two-sum starter code, injects a correct solution, executes it
-// via Piston and asserts the canonical output "[0,1]\n[1,2]\n[0,1]".
+// in the sandbox and asserts the canonical output "[0,1]\n[1,2]\n[0,1]".
 import { generateStarterCode, SUPPORTED_LANGUAGES } from "../src/services/problems/codegen.service.js";
-import { executePiston } from "../src/services/problems/executor.service.js";
+import { executeInSandbox } from "../src/services/problems/executor.service.js";
 
 // Wandbox lacks Kotlin, Swift is broken, and TypeScript can't typecheck modern
 // libs. Keep the codegen templates but skip them (excluded from the selector).
@@ -166,7 +166,7 @@ for (const lang of SUPPORTED_LANGUAGES) {
     continue;
   }
   const t0 = Date.now();
-  const result = await executePiston(lang, code);
+  const result = await executeInSandbox(lang, code);
   const ms = Date.now() - t0;
   const output = (result.output || "").trim().replace(/\s+/g, " ").replace(/ /g, "");
   const ok = result.success && output.replace(/\s/g, "") === EXPECTED.replace(/\s/g, "");

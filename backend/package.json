@@ -4,7 +4,10 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "lint": "node scripts/check-syntax.js",
+    "test": "node --test",
+    "verify:codegen": "node scripts/verify-codegen.js"
   },
   "type": "module",
   "keywords": [],

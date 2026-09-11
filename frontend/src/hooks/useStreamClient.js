@@ -75,17 +75,17 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
           if (videoCall) {
             try {
               await videoCall.camera?.disable();
-            } catch (e) {
+            } catch {
               /* camera may already be off */
             }
             try {
               await videoCall.microphone?.disable();
-            } catch (e) {
+            } catch {
               /* mic may already be off */
             }
             try {
               await videoCall.leave();
-            } catch (e) {
+            } catch {
               /* call may already be left/deleted */
             }
           }

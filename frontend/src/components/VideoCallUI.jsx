@@ -28,16 +28,16 @@ function VideoCallUI({ chatClient, channel }) {
       if (call) {
         try {
           await call.camera?.disable();
-        } catch (e) {
+        } catch {
           /* already off */
         }
         try {
           await call.microphone?.disable();
-        } catch (e) {
+        } catch {
           /* already off */
         }
       }
-    } catch (e) {
+    } catch {
       /* best effort */
     }
     navigate("/dashboard");
