@@ -253,12 +253,13 @@ function HeroDemo() {
     };
   }, [phase, clickedFollowUp]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - clears any pending timers
   useEffect(() => {
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(timer2Ref.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
