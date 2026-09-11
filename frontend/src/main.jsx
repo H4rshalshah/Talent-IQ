@@ -11,8 +11,17 @@ import { initSmoothScroll } from "./lib/animations/smoothScroll";
 // Smooth scrolling (Lenis + ScrollTrigger sync). No-ops for prefers-reduced-motion.
 initSmoothScroll();
 
+// Clerk configuration
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const CLERK_JS_URL = import.meta.env.VITE_CLERK_JS_URL || "https://cdn.clerk.com";
 const API_URL = import.meta.env.VITE_API_URL;
+
+// Set Clerk's JS URL explicitly so we control which CDN is used
+if (typeof window !== "undefined") {
+  window.ClerkConfig = window.ClerkConfig || {};
+  window.ClerkConfig.publishableKey = PUBLISHABLE_KEY;
+  window.ClerkConfig.jsUrl = CLERK_JS_URL;
+}
 
 const container = document.getElementById("root");
 
@@ -120,8 +129,32 @@ if (!keyLooksValid) {
     ],
   });
 } else {
+  // Wait for Clerk to load before rendering the app
+  // This prevents white screen when Clerk script fails to load
   const queryClient = new QueryClient();
 
+  // Create a promise that resolves when Clerk is ready or fails
+  const clerkReadyPromise = new Promise((resolve, reject) => {
+    const checkClerk = () => {
+      // Clerk JS may have loaded by now
+      if (window.Clerk) {
+        resolve();
+        return;
+      }
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        if (!window.Clerk) {
+          reject(new Error("Clerk failed to load within 10 seconds"));
+        }
+      }, 10000);
+    };
+
+    // Check immediately and on load
+    checkClerk();
+    window.addEventListener("load", checkClerk);
+  });
+
+  // Render app with Clerk loading state handling
   root.render(
     <StrictMode>
       <BrowserRouter>
@@ -129,7 +162,12 @@ if (!keyLooksValid) {
           {/* Catches crashes raised by the auth provider itself, which sit
               outside App's own boundary. */}
           <ErrorBoundary>
-            <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+            <ClerkProvider
+              publishableKey={PUBLISHABLE_KEY}
+              preloadChildren={(_) => (
+                <ClerkLoadingFallback />
+              )}
+            >
               <App />
             </ClerkProvider>
           </ErrorBoundary>
@@ -143,4 +181,29 @@ if (!keyLooksValid) {
       "[Talent-IQ] VITE_API_URL is not set for this production build — API requests will hit the frontend origin and fail."
     );
   }
+}
+
+// Clerk loading fallback component
+function ClerkLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-base-200 flex items-center justify-center p-6">
+      <div className="card bg-base-100 shadow-xl max-w-md w-full">
+        <div className="card-body items-center text-center p-8">
+          <div className="size-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
+          <h2 className="text-xl font-bold mb-2">Loading authentication...</h2>
+          <p className="text-base-content/60 text-sm">
+            Setting up secure access. This usually takes a few seconds.
+          </p>
+          <div className="flex gap-2 mt-4">
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
