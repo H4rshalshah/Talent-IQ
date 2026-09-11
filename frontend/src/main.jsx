@@ -85,10 +85,23 @@ const root = createRoot(container, {
 for (const eventName of ["error", "unhandledrejection"]) {
   window.addEventListener(eventName, (event) => {
     const reason = event?.reason ?? event?.message ?? event;
+    // Don't show error UI for Chrome extension communication timeouts
+    // These are browser-internal issues, not app failures
+    const errorStr = String(reason ?? "");
+    if (
+      errorStr.includes("chrome:") &&
+      (errorStr.includes("timed out") || errorStr.includes("call method"))
+    ) {
+      console.warn("[Talent-IQ] Chrome extension communication timeout (non-critical):", reason);
+      return; // Let the app continue loading
+    }
     renderStartupError({
       title: "The application failed to start",
       message: String(reason?.message || reason || "An unexpected error occurred during startup."),
-      hints: ["Reload the page. If it persists, check the browser console and the deployment logs."],
+      hints: [
+        "Reload the page. If it persists, check the browser console and the deployment logs.",
+        "If using Chrome extensions (React DevTools, ad blockers, etc.), try disabling them temporarily.",
+      ],
     });
   });
 }
