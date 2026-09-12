@@ -8,7 +8,7 @@
     <!-- Prevent Chrome extensions from interfering with page scripts -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!-- CSP to prevent unwanted script injection from extensions -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.audio; connect-src 'self' https: http:; frame-src 'self'; object-src 'none';" />
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.audio; connect-src 'self' https: http:; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.clerk.audio; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' https:; object-src 'none';" />
   </head>
   <body>
     <div id="root"></div>
