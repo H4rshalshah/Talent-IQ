@@ -259,7 +259,6 @@ function HeroDemo() {
       clearTimeout(timerRef.current);
       clearTimeout(timer2Ref.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

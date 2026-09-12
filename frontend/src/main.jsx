@@ -28,6 +28,8 @@ const container = document.getElementById("root");
 // Set once so a failure while rendering the fallback cannot recurse.
 let fallbackShown = false;
 
+/* eslint-disable react-refresh/only-export-components */
+
 /**
  * Fatal startup failures must be visible. A blank white page gives no clue
  * that the cause is configuration or an external provider, so every failure
@@ -133,27 +135,6 @@ if (!keyLooksValid) {
   // This prevents white screen when Clerk script fails to load
   const queryClient = new QueryClient();
 
-  // Create a promise that resolves when Clerk is ready or fails
-  const clerkReadyPromise = new Promise((resolve, reject) => {
-    const checkClerk = () => {
-      // Clerk JS may have loaded by now
-      if (window.Clerk) {
-        resolve();
-        return;
-      }
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        if (!window.Clerk) {
-          reject(new Error("Clerk failed to load within 10 seconds"));
-        }
-      }, 10000);
-    };
-
-    // Check immediately and on load
-    checkClerk();
-    window.addEventListener("load", checkClerk);
-  });
-
   // Render app with Clerk loading state handling
   root.render(
     <StrictMode>
@@ -164,9 +145,7 @@ if (!keyLooksValid) {
           <ErrorBoundary>
             <ClerkProvider
               publishableKey={PUBLISHABLE_KEY}
-              preloadChildren={(_) => (
-                <ClerkLoadingFallback />
-              )}
+              preloadChildren={() => <ClerkLoadingFallback />}
             >
               <App />
             </ClerkProvider>
