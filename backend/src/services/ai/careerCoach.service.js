@@ -1,4 +1,4 @@
-import { chatCompletionJson } from "./llm.service.js";
+import { generateStructured } from "./aiClient.js";
 import { retrieveContext } from "../rag/retriever.service.js";
 import { buildCareerRoadmapPrompt } from "./prompts.js";
 import { roleLabel, topicsForRole, topicLabel } from "./topics.js";
@@ -51,7 +51,7 @@ export async function generateCareerRoadmap({
   });
 
   try {
-    const raw = await chatCompletionJson({
+    const raw = await generateStructured({
       task: "roadmap",
       system: "You are an expert AI career coach.",
       user: prompt,

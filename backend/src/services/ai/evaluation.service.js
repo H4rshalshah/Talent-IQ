@@ -1,4 +1,4 @@
-import { chatCompletionJson } from "./llm.service.js";
+import { generateStructured } from "./aiClient.js";
 import { buildPerformanceReportPrompt } from "./prompts.js";
 import { roleLabel } from "./topics.js";
 
@@ -30,7 +30,7 @@ export async function generatePerformanceReport(interview, questions) {
   const heuristic = buildHeuristicReport({ avgScore, strongAreas, weakAreas, difficultyPath });
 
   try {
-    const raw = await chatCompletionJson({
+    const raw = await generateStructured({
       task: "report",
       useFallback: false,
       system: "You are an expert interviewer generating performance reports.",

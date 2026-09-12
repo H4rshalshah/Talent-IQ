@@ -1,4 +1,4 @@
-import { chatCompletionJson } from "./llm.service.js";
+import { generateStructured } from "./aiClient.js";
 import { retrieveContext } from "../rag/retriever.service.js";
 import { buildCodeReviewPrompt } from "./prompts.js";
 
@@ -47,7 +47,7 @@ export async function reviewCode({
   });
 
   try {
-    const raw = await chatCompletionJson({
+    const raw = await generateStructured({
       task: "review",
       system: "You are a senior engineer reviewing candidate code.",
       user: prompt,
